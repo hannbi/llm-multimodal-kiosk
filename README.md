@@ -13,5 +13,5 @@
 ## 👥 Collaborators | 개발팀
 | 역할 | 이름 / GitHub | 
 |------|----------------|
-| 🧩 PM / Backend / UX·UI | [hannbi](https://github.com/hannbi) |
-| 🎨 Frontend / Interaction Developer | [qksdmsqls1](https://github.com/qksdmsqls1) | 
+| PM / Backend / UX·UI | [hannbi](https://github.com/hannbi) |
+| Frontend / Interaction Developer | [qksdmsqls1](https://github.com/qksdmsqls1) | 
