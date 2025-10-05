@@ -14,4 +14,4 @@
 | 역할 | GitHub | 
 |------|----------------|
 | PM / Backend / UX·UI | [hannbi](https://github.com/hannbi) |
-| Frontend / Interaction Developer | [qksdmsqls1](https://github.com/qksdmsqls1) | 
+| Frontend / UX·UI | [qksdmsqls1](https://github.com/qksdmsqls1) | 
