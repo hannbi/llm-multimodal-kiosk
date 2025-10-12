@@ -1,0 +1,99 @@
+/* 음성 모드 전용 결제수단 CSS */
+
+
+
+
+.order-list-container-voice {
+  padding: 20px;
+}
+
+.confirm-title-voice {
+  font-size: 50px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* 결제 수단 버튼 영역 */
+.paychoice-grid-voice {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+   margin-top: 40px; 
+}
+
+/* 개별 옵션 */
+.paychoice-option-voice {
+  background: #fff;
+  border: 2px solid #333;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.paychoice-option-voice:hover {
+  background: #f1f1f1;
+}
+
+.paychoice-option-voice.selected {
+  border-color: #000000;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+}
+
+.paychoice-option-voice img {
+  width: 200px;
+  height: 80px;
+  object-fit: contain;
+  margin-bottom: 10px;
+}
+
+.paychoice-text-voice {
+  display: block;
+  font-size: 30px;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.paychoice-sub-voice {
+  display: block;
+  font-size: 20px;
+  color: red;
+  margin-top: 5px;
+}
+
+/* ✅ 결제 진행 페이지 (Voice 모드) 카드 삽입 이미지 */
+.payprocess-image-voice {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 30px;   /* 위쪽 간격 */
+  margin-bottom: 20px; /* 아래쪽 간격 */
+}
+
+.payprocess-image-voice img {
+  width: 420px;   /* 이미지 크기 */
+  height: auto;
+  object-fit: contain;
+  animation: pulse-voice 1.5s infinite ease-in-out; /* 살짝 강조 효과 */
+   margin-left: -90px;
+}
+
+/* 살짝 커졌다 작아지는 효과 */
+@keyframes pulse-voice {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.paycomplete-image-voice img {
+  width: 220px;       /* 터치모드보다 작거나 다르게 조정 가능 */
+  height: auto;
+  margin-top: 50px;   /* 위치도 조정 가능 */
+}

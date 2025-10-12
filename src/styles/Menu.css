@@ -1,0 +1,620 @@
+/* Menu.css */
+.arrow {
+  background: none;         /* 배경 없애기 */
+  border: none;             /* 테두리 없애기 */
+  box-shadow: none;         /* 그림자 제거 */
+  border-radius: 50%;       /* 동그란 버튼 유지 (필요 시) */
+  width: 32px;
+  height: 32px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;/* 글자 색 (필요 시) */
+}
+.arrow:focus,
+.arrow:active {
+  outline: none;            /* ✅ 클릭 시 생기는 외곽선 제거 */
+  box-shadow: none;         /* ✅ 클릭 시 생기는 그림자 제거 */
+}
+/* 왼쪽 화살표 */
+.arrow.left {
+  position: absolute;
+  left: 0;
+}
+
+/* 오른쪽 화살표 */
+.arrow.right {
+  position: absolute;
+  right: 0;
+}
+
+.cart-slider-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 1rem;
+  overflow: hidden; /* 넘치는 카드 숨기기 */
+  gap: 1rem;
+   height: 230px;
+   
+}
+
+.cart-box-wrapper {
+  background-color: #ffffff;       /* 연한 회색 배경 */
+  border-radius: 20px;             /* 둥근 박스 */
+  max-width: 62%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.cart-card {
+  position: relative;
+  flex: 0 0 auto;
+  width: 160px;
+  height: 200px; 
+  padding: 1rem;
+  background: rgb(254, 254, 254);
+  border-radius: 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+   border: 1px solid #001f4d; /* ✅ 남색 테두리 추가 */
+}
+
+.cart-card img {
+  width: 100%;
+  height: 100px;
+  object-fit: contain;
+}
+
+.cart-card p {
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.qty-controller {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.qty-controller button {
+  font-size: 1rem;
+  padding: 0.2rem 0.6rem;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: red;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 0.8rem;
+  line-height: 18px;
+    display: flex;                /* ✅ Flex 적용 */
+  align-items: center;          /* 수직 가운데 정렬 */
+  justify-content: center;   
+}
+
+.summary-box {
+  position: absolute;
+  top: 3.4rem;
+  left: 44rem;
+  width: 300px;
+  height: 220px;
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: left;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.summary-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.summary-price {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: red;
+  margin-bottom: 1rem;
+}
+
+.summary-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.summary-buttons .cancel-order,
+.summary-buttons .confirm-order {
+  flex: 1;
+  padding: 0.6rem 0.4rem;
+  font-size: 1rem;
+  border-radius: 8px;
+}
+
+.summary-buttons .cancel-order {
+  background: white;
+  border: 2px solid #2c2c3d;
+}
+
+.summary-buttons .confirm-order {
+  background: #2c2c3d;
+  color: white;
+  border: none;
+}
+
+.menu-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background: #fefaf6;
+}
+
+.menu-sidebar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 23%;
+  height: 100%;
+  background: #2c2c3d;
+  color: white;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+.menu-sidebar h2.logo {
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+}
+
+.menu-sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.menu-sidebar li {
+  margin: 4rem 0;
+  font-size: 1.4rem;
+  cursor: pointer;
+  
+}
+
+.menu-sidebar li.active {
+  font-weight: bold;
+  background-color: #fff;
+  color: #2c2c3d;
+  width: 100%;
+  text-align: center;
+  padding: 1rem 0;
+  border-radius: 0;
+  box-sizing: border-box;
+  white-space: nowrap; /* ✅ 줄바꿈 방지 */
+  overflow: hidden;
+  text-overflow: ellipsis; /* ✅ 넘치면 ... 처리 */
+   border-radius: 12px;   
+}
+
+.menu-content {
+  margin-left: 23%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* 전체 페이지 스크롤 방지 */
+}
+
+/* 🧱 상단 고정 바 - 가로 전체 꽉차게 */
+.menu-fixed-bar {
+  width: 100%;
+  background-color: #5d5d6b;
+  color: white;
+  padding: 2rem;
+  font-size: 4rem;
+  font-weight: 800;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+/* 🔻 메뉴 리스트만 스크롤되도록 */
+.menu-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+  padding-bottom: 30rem;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE, Edge */
+}
+.menu-scroll-area::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+.menu-content::-webkit-scrollbar {
+  display: none;
+}
+
+.menu-content h1 {
+  font-size: 5rem;
+  font-weight: 900;
+  margin-bottom: 2rem;
+  color: #2c2c3d;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.menu-item {
+  font-size: 1.3rem;
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  height: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.menu-item img {
+  width: 100%;
+  max-height: 140px;
+  object-fit: contain;
+}
+
+.menu-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #F6F2ED;
+  padding: 2rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  border-top: 10px solid #B4B4B4; 
+   height: 440px; 
+}
+
+.staff-img {
+  width: 270px; /* 기본 크기 */
+  position: relative; /* 이동 가능하게 */
+}
+
+.staff-img.eyes {
+  transform: translateX(-2px); /* 왼쪽으로 5px 이동 */
+}
+
+.welcome-message {
+  position: absolute;
+  left: 62%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  width: 700px;
+  height: 120px;
+  padding: 1.5rem;
+  background: #2c2c3d;
+  color: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: clamp(0.5rem, 2vw, 1.4rem);
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+.footer-options {
+  position: absolute;
+  right: 2rem;
+  bottom: 2rem;
+  display: flex;
+  gap: 2rem;
+}
+
+.footer-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 1rem;
+}
+.footer-options a {
+  text-decoration: none;
+  color: inherit;
+}
+.footer-option img {
+  width: 50px;
+  height: 50px;
+  margin-bottom: 0.5rem;
+}
+.footer-options span {
+  margin-left: 1rem;
+  font-size: 1rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-box {
+  background: #fff;
+  padding: 40px 60px; /* 위아래 여백 넉넉히 */
+  border-radius: 16px;
+  width: 600px;
+  min-height: 300px; /* 고정 높이 대신 최소 높이 */
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* 전체 세로 중앙정렬 */
+  align-items: center;
+  margin-top: -15rem;
+}
+/* 제목: 음성모드로 전환하시겠습니까? */
+.switch-modal h3 {
+  font-size: 2rem;       /* ✅ 더 큼 */
+  font-weight: bold;       /* ✅ 굵게 */
+  line-height: 2.4rem;     
+  margin-bottom: 1rem;
+  color: #2c2c3d;          /* 필요 시 진한 색상 */
+}
+
+/* 설명: 현재 터치주문 모드입니다 */
+.switch-modal p {
+  font-size: 1.4rem;       /* ✅ 살짝 작게 */
+  font-weight: normal;     /* ✅ 보통 굵기 */
+  line-height: 1.8rem;
+  margin-bottom: 1rem;
+    margin-top: 1rem; 
+  color: #555;             /* 살짝 연한 색상 추천 */
+}
+
+.modal-buttons {
+  margin-top: 50px;
+  display: flex;
+  justify-content: center; /* 가운데 정렬 */
+  gap: 100px; /* 버튼 사이 간격을 줄임 (원하는 만큼 조절) */
+}
+
+
+/* 전환 모달 버튼 */
+/* 전환 모달 버튼 */
+.switch-cancel {
+  background: #ccc;
+  color: #333;
+  width: 200px; /* ✅ 가로 크기 동일 */
+  height: 80px; /* ✅ 세로도 통일 */
+  font-size: 24px; /* ✅ 폰트 크게 */
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.switch-confirm {
+  background: #e16073;
+  color: white;
+  width: 200px; /* ✅ 가로 크기 동일 */
+  height: 80px; /* ✅ 세로도 통일 */
+  font-size: 24px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* 옵션 선택 모달 버튼 */
+.option-cancel {
+  background: #ccc;
+  padding: 30px 30px;
+  border: none;
+  border-radius: 8px;
+}
+
+.option-add {
+  background: #e60023;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+}
+
+.option-section {
+  margin-top: 16px;
+}
+
+.option-section button {
+  margin: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #aaa;
+  background: #f9f9f9;
+  cursor: pointer;
+}
+
+.option-section button.active {
+  background-color: #393939;
+  color: white;
+  font-weight: bold;
+  border-color: #393939;
+}
+
+.nutrition-box {
+  background: #f3f3f3;
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 8px;
+  text-align: left;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.touch-mode-footer {
+  width: 100%;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  margin-bottom: 100px;
+}
+
+.cart-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 1000px;
+}
+
+.cart-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding-top: 1.5rem;
+}
+
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  font-size: 1.2rem;
+}
+
+.cart-item .menu-name {
+  width: 120px;
+}
+
+.cart-item .qty-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cart-item .qty-box button {
+  padding: 4px 10px;
+  font-size: 1rem;
+}
+
+.cart-item .price {
+  width: 100px;
+  text-align: right;
+}
+
+.footer-buttons {
+  display: flex;
+  justify-content: flex-start;
+  gap: 2rem;
+  margin-top: auto;
+  padding-top: 4rem;
+  padding-right: 35rem;
+}
+
+.cancel-order, .confirm-order {
+  padding: 18px 28px;
+  font-size: 18px;
+  border-radius: 8px;
+}
+
+.cancel-order {
+  background-color: #fff;
+  border: 2px solid #333;
+}
+
+.confirm-order {
+  background-color: #2d3559;
+  color: white;
+  border: none;
+}
+
+.cart-right {
+  background-color: white;
+  padding: 2rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+  width: 400px;
+  height: fit-content;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cart-right .total-label {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.cart-right .total-price {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #e60023;
+}
+.option-modal-box {
+  background: white;
+  padding: 30px 60px;
+  border-radius: 20px;
+  width: 520px;
+  text-align: center;
+  margin-top: -15rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.option-modal-box h3 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1.2rem;
+}
+
+.option-section {
+  margin: 1.2rem 0;
+}
+
+.option-section button {
+  margin: 0 0.5rem;
+  padding: 14px 14px;
+  border-radius: 10px;
+  border: none;
+  background: #f3f3f3;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.option-section button.active {
+  background: #333;
+  color: white;
+}
+
+.nutrition-box {
+  margin-top: 1rem;
+  background: #f9f9f9;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 0.95rem;
+}

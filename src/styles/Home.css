@@ -1,0 +1,65 @@
+.home-wrapper {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* 홈 전체 컨테이너 */
+.home-container {
+  position: relative;
+  width: auto;
+  height: 100%;
+  aspect-ratio: 9 / 16;
+  max-width: 100vw;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* 배경 이미지 */
+.home-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* staff 캐릭터 */
+.staff-home {
+  position: absolute;
+  bottom: -54%;
+  left: 60%;
+  transform: translateX(-50%);
+  width: 160%;
+  height: auto;
+  z-index: 10;
+}
+
+/* 눈 이미지 (staff 위에 완전히 겹치기) */
+.staff-eyes {
+  position: absolute;
+  bottom: -53.8%;
+  left: 58.4%;
+  transform: translateX(-50%);
+  width: 160%;
+  height: auto;
+  opacity: 0; /* 기본적으로 안보임 */
+  z-index: 11; /* staff 위 */
+  transition: opacity 0.1s ease-in-out;
+}
+
+/* 깜박임 순간에 나타나기 */
+.staff-eyes.blink {
+  opacity: 1;
+}
+
+/* 전체 스크롤 방지 */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}

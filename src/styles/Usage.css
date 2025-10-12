@@ -1,0 +1,50 @@
+/* Usage.css */
+
+/* 이용 방식 선택 영역 */
+.usage-options {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 30px;
+}
+
+/* 개별 카드 */
+.usage-option {
+  width: 500px;
+  height: 600px;
+  border-radius: 20px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s;
+   margin-top: 120px;
+}
+
+.usage-option img {
+  width: 260px;
+  height: 260px;
+  margin-bottom: 20px;
+}
+
+.usage-option span {
+  font-size: 50px;
+  font-weight: bold;
+}
+
+/* 선택됐을 때 스타일 */
+.usage-option.active {
+  background-color: #eee;
+  box-shadow: 0 0 0 4px #3a3a58 inset;
+}
+.usage-title {
+    
+  font-size: 50px;
+  font-weight: bold;
+  text-align: center;
+  margin: 0px 0 20px 0;
+  margin-top: 70px;
+}

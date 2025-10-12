@@ -1,0 +1,158 @@
+/* ====== 음성 모드 전용 ====== */
+
+/* 주문 확인 카드 */
+.order-confirm-card-voice {
+  background-color: #f8f8f8;
+  border-radius: 42px;
+  width: 90vw;   /* 화면 너비의 60% */
+  height: 50vh; 
+  max-width: 900px;
+  margin: 50px auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  top: -30px;
+  display: flex;
+  flex-direction: column;
+  transform: scale(calc(100vh / 1500));
+  position: relative;   /* ✅ 버튼 위치 기준 */
+}
+
+/* 카드 상단 헤더 */
+.order-card-header-voice {
+  background-color: #2d2d3a;
+  color: white;
+  font-weight: bold;
+  padding: 30px 24px;
+  font-size: 30px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 주문 목록 컨테이너 */
+.order-list-container-voice {
+  background-color: #f5f1ee;
+  flex: 1;
+  padding: 30px 20px;
+  border-radius: 25px 25px 0 0;
+  overflow-y: hidden;
+}
+
+/* "주문 내역을 확인해주세요" */
+.confirm-title-voice {
+font-size: 50px; font-weight: bold; text-align: center; margin: 0px 0 20px 0; margin-top: 70px;
+}
+
+/* 주문 아이템 카드 */
+.order-item-card-voice {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  padding: 45px;
+  margin-bottom: 30px;
+    padding: 40px;
+  width: 98%;        /* 👈 전체 폭을 부모의 90%로 줄임 */
+  margin: 0 auto; 
+  margin-bottom: 30px;
+}
+
+.order-item-image-voice {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  margin-right: 15px;
+}
+
+.order-item-name-voice {
+  font-weight: bold;
+  font-size: 30px;
+}
+
+.order-item-option-voice {
+  font-size: 26px;
+  color: #555;
+  white-space: pre-line;
+}
+
+/* 버튼 영역 */
+.menu-order-buttons-voice {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  gap: 100px;
+  height: 100px;
+}
+
+.menu-order-buttons-voice button {
+  font-size: 34px;
+  padding: 20px 50px;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+  min-width: 200px;
+}
+/* 주문 목록 스크롤 (음성 모드 전용) */
+.order-scroll-voice {
+  height: 28vh;      /* ✅ 무조건 고정 높이 */
+  overflow-y: auto;   /* ✅ 넘치면 내부에서만 스크롤 */
+  padding-right: 15px;
+   margin-top: 50px;  /* IE, Edge 구버전 전용 */
+}
+
+.order-scroll-voice::-webkit-scrollbar {
+  display: none; /* ✅ 크롬/사파리에서 스크롤바 숨김 */
+}
+/* ====== 음성 모드 이용 방식 선택 ====== */
+.usage-options-voice {
+  display: flex;
+  justify-content: center;
+  gap: 80px;
+  margin-top: 50px;
+}
+
+.usage-option-voice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px;
+  border-radius: 20px;
+  background-color: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.usage-option-voice img {
+  width: 300px;
+  height: 300px;
+  margin-bottom: 20px;
+}
+
+.usage-option-voice span {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.usage-option-voice.active {
+  border: 3px solid #2d2d3a;
+  background-color: #f1f1f1;
+}
+/* 이미지 영역 */
+.paycomplete-image {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+   margin-top: -40px; 
+}
+
+.paycomplete-image img {
+  width: 350px;
+  height: auto;
+  object-fit: contain;
+}
