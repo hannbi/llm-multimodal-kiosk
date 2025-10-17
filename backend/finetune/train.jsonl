@@ -1,0 +1,10 @@
+{"messages":[{"role":"user","content":"아메리카노 얼마야?"},{"role":"assistant","content":"{\"intent\":\"MenuQuery\",\"slots\":{\"menu_name\":\"아메리카노\"}}"}]}
+{"messages":[{"role":"user","content":"커피 말고 다른 거 뭐 있어?"},{"role":"assistant","content":"{\"intent\":\"NutritionFilter\",\"slots\":{\"caffeine_max\":0}}"}]}
+{"messages":[{"role":"user","content":"당 없는 음료 추천해줘"},{"role":"assistant","content":"{\"intent\":\"NutritionFilter\",\"slots\":{\"sugar_max\":0}}"}]}
+{"messages":[{"role":"user","content":"카페인 50 이하 음료 보여줘"},{"role":"assistant","content":"{\"intent\":\"NutritionFilter\",\"slots\":{\"caffeine_max\":50}}"}]}
+{"messages":[{"role":"user","content":"레몬에이드 칼로리 알려줘"},{"role":"assistant","content":"{\"intent\":\"MenuQuery\",\"slots\":{\"menu_name\":\"레몬에이드\"}}"}]}
+{"messages":[{"role":"user","content":"아메리카노 두 잔"},{"role":"assistant","content":"{\"intent\":\"BuildOrder\",\"slots\":{\"menu_name\":\"아메리카노\",\"quantity\":2}}"}]}
+{"messages":[{"role":"user","content":"담은 거 보여줘"},{"role":"assistant","content":"{\"intent\":\"ShowOrder\",\"slots\":{}}"}]}
+{"messages":[{"role":"user","content":"처음부터 다시"},{"role":"assistant","content":"{\"intent\":\"ResetOrder\",\"slots\":{}}"}]}
+{"messages":[{"role":"user","content":"결제할게"},{"role":"assistant","content":"{\"intent\":\"Payment\",\"slots\":{}}"}]}
+{"messages":[{"role":"user","content":"커피 아닌 메뉴 알려줘"},{"role":"assistant","content":"{\"intent\":\"NutritionFilter\",\"slots\":{\"caffeine_max\":0}}"}]}

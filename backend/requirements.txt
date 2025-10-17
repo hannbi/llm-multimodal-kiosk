@@ -1,0 +1,11 @@
+openai
+python-dotenv
+sounddevice
+numpy
+scipy
+openai-whisper
+pyttsx3
+torch
+google-cloud-texttospeech
+google-cloud-speech
+pygame
