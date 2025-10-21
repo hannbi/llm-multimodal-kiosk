@@ -9,3 +9,6 @@ torch
 google-cloud-texttospeech
 google-cloud-speech
 pygame
+fastapi
+uvicorn
+pydantic

@@ -3,6 +3,11 @@ from gpt_response import get_gpt_response
 from text_to_speech import speak
 import sqlite3
 
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from api.routes import router as api_router
+
+app = FastAPI(title="llm-multimodal-API", version="1.0")
 # ✅ 대화 상태 저장 (맥락 유지용)
 state = {
     "last_menu": None,
@@ -136,6 +141,9 @@ def run_kiosk():
         # 4. 최종 출력
         print(f"🤖 최종 멘트: {final_response}")
         # speak(final_response)
+        
+app.include_router(api_router, prefix="/api")
 
 if __name__ == "__main__":
-    run_kiosk()
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=5000, reload=True)
