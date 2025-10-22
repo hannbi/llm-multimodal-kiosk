@@ -1,0 +1,48 @@
+.payprocess-subtitle {
+  font-size: 50px;
+  color: #666;
+  font-weight: bold;
+  text-align: center;
+  margin: 20px 0 10px 0;
+}
+
+.payprocess-title {
+font-size: 50px; font-weight: bold; text-align: center; margin: 0px 0 20px 0; 
+}
+
+.payprocess-desc {
+  font-size: 35px;
+  text-align: center;
+  color: gray;
+  margin-bottom: 30px;
+}
+
+.payprocess-image {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0 40px 0;
+}
+
+.payprocess-image img {
+  width: 600px;
+  height: auto;
+   margin-left: -80px; 
+   margin-top: 40px; 
+   animation: pulse-voice 1.5s infinite ease-in-out; /* 살짝 강조 효과 */
+}
+.loading-spinner {
+ border: 20px solid #f3f3f3;      /* ✅ 테두리 굵기 증가 */
+  border-top: 20px solid #3a3a58;  /* ✅ 회전하는 부분도 굵게 */
+  border-radius: 50%;   
+  width: 350px;
+  height: 350px;
+  animation: spin 1s linear infinite;
+  margin: 40px auto;
+  margin-top: 140px; 
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+

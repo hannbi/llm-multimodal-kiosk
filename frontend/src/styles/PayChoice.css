@@ -1,0 +1,86 @@
+.paychoice-title {
+  font-size: 38px;
+  font-weight: bold;
+  text-align: center;
+  margin: 40px 0;
+}
+
+.paychoice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px;
+  justify-items: center;
+  margin-bottom: 80px;
+  margin-top: 60px;  
+}
+
+.paychoice-option {
+    background: #fff;
+  width: 400px;
+  height: 180px;
+  border-radius: 18px;
+  border: 2px solid transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: center;
+  border: 2px solid #000;  
+}
+
+/* 기본 이미지 스타일 (공통) */
+.paychoice-option img {
+  object-fit: contain;
+  margin-bottom: 10px;
+}
+
+/* 개별 조정 */
+.pay-img-card {
+  width: 110px;
+  height: 80px;
+}
+
+.pay-img-cash {
+  width: 110px;
+  height: 90px;
+}
+
+.pay-img-kakao {
+  width: 190px;
+  height: 100px;
+}
+
+.pay-img-payco {
+  width: 190px;
+  height: 70px;
+}
+
+.pay-img-zero {
+  width: 190px;
+  height: 80px;
+}
+
+.pay-img-naver {
+  width: 190px;
+  height: 90px;
+}
+
+
+.paychoice-text {
+  font-size: 30px;
+  font-weight: bold;
+  color: #222;
+}
+
+.paychoice-sub {
+  font-size: 20px;
+  color: #cc0000;
+}
+
+.paychoice-option.selected {
+  border: 4px solid #3a3a58;
+  background-color: #f0f0f5;
+}
