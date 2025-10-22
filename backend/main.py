@@ -5,7 +5,7 @@ import sqlite3
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routes import router as api_router
+from api.routes import router 
 
 app = FastAPI(title="llm-multimodal-API", version="1.0")
 # ✅ 대화 상태 저장 (맥락 유지용)
@@ -13,6 +13,17 @@ state = {
     "last_menu": None,
     "order_list": []
 }
+
+# ✅ CORS 추가 (React랑 통신되게)
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 또는 ["http://localhost:5173"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 def run_kiosk():
     print("🎤 V3X 키오스크 텍스트 테스트 모드 시작 ('종료' 입력시 종료)")
@@ -142,7 +153,7 @@ def run_kiosk():
         print(f"🤖 최종 멘트: {final_response}")
         # speak(final_response)
         
-app.include_router(api_router, prefix="/api")
+app.include_router(router, prefix="/api")
 
 if __name__ == "__main__":
     import uvicorn

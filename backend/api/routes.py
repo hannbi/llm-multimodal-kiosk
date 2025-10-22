@@ -1,16 +1,14 @@
 from fastapi import APIRouter, HTTPException
 import sqlite3
-from pydantic import BaseModel
-from typing import List
 
 router = APIRouter()
 
 def get_conn():
-    conn = sqlite3.connect("kiosk.db")
+    conn = sqlite3.connect("C:/Users/82109/Desktop/llm-kiosk-db/kiosk.db")
     conn.row_factory = sqlite3.Row
     return conn
 
-# 전체 메뉴 및 기본 상품 정보 
+# ✅ 전체 메뉴 리스트
 @router.get("/menu")
 def get_menu():
     conn = get_conn()
@@ -24,7 +22,7 @@ def get_menu():
     conn.close()
     return [dict(r) for r in rows]
 
-# 세부정보와 가격 
+# ✅ 옵션별 상세 정보 (가격, 칼로리 등)
 @router.get("/menu/{menu_name}/detail")
 def get_product_detail(menu_name: str, size: str, temperature: str):
     conn = get_conn()
@@ -40,18 +38,23 @@ def get_product_detail(menu_name: str, size: str, temperature: str):
             Product.sodium_mg
         FROM Product
         JOIN MenuItem ON Product.menu_id = MenuItem.menu_id
-        WHERE MenuItem.name = ? 
-          AND Product.size = ? 
-          AND Product.temperature_type = ?
+        WHERE LOWER(MenuItem.name) = LOWER(?) 
+          AND LOWER(Product.size) = LOWER(?) 
+          AND LOWER(Product.temperature_type) = LOWER(?)
     """, (menu_name, size, temperature))
+    
     row = cur.fetchone()
     conn.close()
+
     if row:
         return dict(row)
     else:
-        raise HTTPException(status_code=404, detail="해당 옵션의 상품 정보를 찾을 수 없습니다.")
-    
-# 메뉴 옵션 조건 반환
+        raise HTTPException(
+            status_code=404, 
+            detail=f"해당 옵션의 상품 정보를 찾을 수 없습니다. ({menu_name}, {size}, {temperature})"
+        )
+
+# ✅ 메뉴별 선택 가능한 옵션 반환
 @router.get("/menu/{menu_name}/options")
 def get_available_options(menu_name: str):
     conn = get_conn()
@@ -60,7 +63,7 @@ def get_available_options(menu_name: str):
         SELECT DISTINCT size, temperature_type
         FROM Product
         JOIN MenuItem ON Product.menu_id = MenuItem.menu_id
-        WHERE MenuItem.name = ?
+        WHERE LOWER(MenuItem.name) = LOWER(?)
     """, (menu_name,))
     rows = cur.fetchall()
     conn.close()
@@ -68,8 +71,8 @@ def get_available_options(menu_name: str):
     if not rows:
         raise HTTPException(status_code=404, detail="해당 메뉴의 옵션 정보를 찾을 수 없습니다.")
 
-    sizes = sorted({r["size"] for r in rows if r["size"]})
-    temps = sorted({r["temperature_type"] for r in rows if r["temperature_type"]})
+    # 첫 글자 대문자화 (프론트 일치)
+    sizes = sorted({r["size"].capitalize() for r in rows if r["size"]})
+    temps = sorted({r["temperature_type"].capitalize() for r in rows if r["temperature_type"]})
 
     return {"sizes": sizes, "temperatures": temps}
-
