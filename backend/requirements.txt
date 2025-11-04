@@ -12,3 +12,4 @@ pygame
 fastapi
 uvicorn
 pydantic
+python-multipart

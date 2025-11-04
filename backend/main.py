@@ -7,14 +7,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes import router 
 
+from fastapi.staticfiles import StaticFiles
+from fastapi import UploadFile, File
+import shutil, uuid
+
 app = FastAPI(title="llm-multimodal-API", version="1.0")
-# ✅ 대화 상태 저장 (맥락 유지용)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+# 대화 상태 저장 (맥락 유지용)
 state = {
     "last_menu": None,
     "order_list": []
 }
 
-# ✅ CORS 추가 (React랑 통신되게)
+# CORS 추가 (React랑 통신되게)
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
@@ -153,7 +159,28 @@ def run_kiosk():
         print(f"🤖 최종 멘트: {final_response}")
         # speak(final_response)
         
+        
+        
+@app.post("/upload-image")
+async def upload_image(file: UploadFile = File(...)):
+    filename = f"{uuid.uuid4()}_{file.filename}"
+    filepath = f"uploads/{filename}"
+
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    image_url = f"http://localhost:5000/uploads/{filename}"
+
+    conn = sqlite3.connect("kiosk.db")
+    cur = conn.cursor()
+    cur.execute("INSERT INTO SpotImage (image_url) VALUES (?)", (image_url,))
+    conn.commit()
+    conn.close()
+
+    return {"image_url": image_url}
+
 app.include_router(router, prefix="/api")
+
 
 if __name__ == "__main__":
     import uvicorn

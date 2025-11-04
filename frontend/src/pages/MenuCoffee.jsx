@@ -59,7 +59,7 @@ function MenuCoffee() {
               caffeine_mg: item.caffeine_mg,
               sugar_g: item.sugar_g,
               sodium_mg: item.sodium_mg,
-              img: "/images/coffee.png", // 임시 이미지
+              img: item.image_url, // 임시 이미지
             });
           }
         });
@@ -364,7 +364,11 @@ function MenuCoffee() {
         <div className="modal-overlay">
           <div className="option-modal-box">
             <h3>옵션 메뉴 선택</h3>
-            <img src="/images/coffee.png" alt="coffee" style={{ width: '100px' }} />
+            <img
+              src={selectedMenu?.img}
+              alt={selectedMenu?.name}
+              style={{ width: '140px', borderRadius: '8px' }}
+            />
             <p><strong>{selectedMenu?.name || '음료 선택됨'}</strong></p>
             <p>V3X만의 특별한 원두로 제작한 {selectedMenu?.name}</p>
 

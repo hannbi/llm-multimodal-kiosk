@@ -8,12 +8,13 @@ def get_conn():
     conn.row_factory = sqlite3.Row
     return conn
 
-# ✅ 전체 메뉴 리스트
+# 전체 메뉴 리스트
 @router.get("/menu")
 def get_menu():
     conn = get_conn()
     rows = conn.execute("""
         SELECT m.menu_id, m.name, m.category,
+               m.image_url,
                p.product_id, p.size, p.temperature_type, p.price,
                p.calories_kcal, p.sugar_g, p.protein_g, p.caffeine_mg, p.sodium_mg
         FROM MenuItem m
@@ -22,7 +23,7 @@ def get_menu():
     conn.close()
     return [dict(r) for r in rows]
 
-# ✅ 옵션별 상세 정보 (가격, 칼로리 등)
+# 옵션별 상세 정보 (가격, 칼로리 등)
 @router.get("/menu/{menu_name}/detail")
 def get_product_detail(menu_name: str, size: str, temperature: str):
     conn = get_conn()
