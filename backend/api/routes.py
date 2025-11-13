@@ -18,7 +18,7 @@ def get_menu():
     conn = get_conn()
     rows = conn.execute("""
         SELECT m.menu_id, m.name, m.category,
-              -- m.image_url,   --
+               m.image_url,
                p.product_id, p.size, p.temperature_type, p.price,
                p.calories_kcal, p.sugar_g, p.protein_g, p.caffeine_mg, p.sodium_mg
         FROM MenuItem m
