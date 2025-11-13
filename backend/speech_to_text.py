@@ -9,7 +9,8 @@ from text_to_speech import speak
 # import io
 
 # Google 서비스 계정 키 경로 (STT 안 쓰면 필요 없음, 남겨둬도 OK)
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "C:/Users/82109/Desktop/V3X_project/v3xProject/secrets/v3x-project-4fab2d807b9f.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "C:/Users/은빈/Desktop/V3X_project/v3xProject/secrets/v3x-project-4fab2d807b9f.json"
+
 
 # SAMPLE_RATE = 16000
 # DURATION = 5  # 초 단위 녹음 시간

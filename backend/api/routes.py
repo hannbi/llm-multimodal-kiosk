@@ -1,10 +1,14 @@
 from fastapi import APIRouter, HTTPException
 import sqlite3
+import os
 
 router = APIRouter()
 
 def get_conn():
-    conn = sqlite3.connect("C:/Users/82109/Desktop/llm-kiosk-db/kiosk.db")
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    db_path = os.path.join(base_dir, "kiosk.db")
+    print("DB PATH:", db_path)  # 디버깅용
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -14,7 +18,7 @@ def get_menu():
     conn = get_conn()
     rows = conn.execute("""
         SELECT m.menu_id, m.name, m.category,
-               m.image_url,
+              -- m.image_url,   --
                p.product_id, p.size, p.temperature_type, p.price,
                p.calories_kcal, p.sugar_g, p.protein_g, p.caffeine_mg, p.sodium_mg
         FROM MenuItem m
