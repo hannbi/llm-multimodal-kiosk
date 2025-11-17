@@ -55,7 +55,7 @@ def get_product_detail(menu_name: str, size: str, temperature: str):
             detail=f"해당 옵션의 상품 정보를 찾을 수 없습니다. ({menu_name}, {size}, {temperature})"
         )
 
-# ✅ 메뉴별 선택 가능한 옵션 반환
+# 메뉴별 선택 가능한 옵션 반환
 @router.get("/menu/{menu_name}/options")
 def get_available_options(menu_name: str):
     conn = get_conn()

@@ -1,12 +1,15 @@
 // UsagePage.jsx
-import { useNavigate } from "react-router-dom";
 import React, { useState } from "react";
-import "../styles/MenuOrder.css"; 
+import "../styles/MenuOrder.css";
 import "../styles/Usage.css"; // 새 CSS 추가
+import { useNavigate, useLocation } from "react-router-dom";
 
 function UsagePage() {
   const navigate = useNavigate();
   const [selected, setSelected] = useState(null);
+
+  const location = useLocation();
+  const { cartItems = [], totalPrice = 0 } = location.state || {};
 
   return (
     <div className="menu-order-wrapper">
@@ -22,41 +25,38 @@ function UsagePage() {
       </div>
 
       {/* 진행 단계 */}
-<div className="stepper">
-  {["주문 확인", "이용 방식", "결제 수단", "결제 진행", "주문 완료"].map(
-    (label, index) => {
-      const currentStep = 1; // 현재 단계 (0부터 시작 → 1은 '이용 방식')
-      const isActive = index === currentStep;
-      const isCompleted = index < currentStep; // 이전 단계는 완료 처리
+      <div className="stepper">
+        {["주문 확인", "이용 방식", "결제 수단", "결제 진행", "주문 완료"].map(
+          (label, index) => {
+            const currentStep = 1; // 현재 단계 (0부터 시작 → 1은 '이용 방식')
+            const isActive = index === currentStep;
+            const isCompleted = index < currentStep; // 이전 단계는 완료 처리
 
-      return (
-        <div className="step-wrapper" key={index}>
-          <div
-            className={`step-circle ${
-              isActive ? "active" : isCompleted ? "completed" : ""
-            }`}
-          >
-            {isCompleted ? "✔" : index + 1} {/* ✅ 완료 단계는 체크 표시 */}
-          </div>
-          <div
-            className={`step-label ${
-              isActive ? "active" : isCompleted ? "completed" : ""
-            }`}
-          >
-            {label}
-          </div>
-          {index !== 4 && (
-            <div
-              className={`step-line ${
-                isCompleted ? "completed" : isActive ? "active" : ""
-              }`}
-            />
-          )}
-        </div>
-      );
-    }
-  )}
-</div>
+            return (
+              <div className="step-wrapper" key={index}>
+                <div
+                  className={`step-circle ${isActive ? "active" : isCompleted ? "completed" : ""
+                    }`}
+                >
+                  {isCompleted ? "✔" : index + 1} {/* 완료 단계는 체크 표시 */}
+                </div>
+                <div
+                  className={`step-label ${isActive ? "active" : isCompleted ? "completed" : ""
+                    }`}
+                >
+                  {label}
+                </div>
+                {index !== 4 && (
+                  <div
+                    className={`step-line ${isCompleted ? "completed" : isActive ? "active" : ""
+                      }`}
+                  />
+                )}
+              </div>
+            );
+          }
+        )}
+      </div>
 
       {/* 중앙 카드 */}
       <div className="order-confirm-card">
@@ -88,7 +88,9 @@ function UsagePage() {
 
           {/* 버튼 영역 */}
           <div className="menu-order-buttons">
-            <button className="order-back" onClick={() => navigate("/order")}>
+            <button className="order-back" onClick={() =>
+              navigate("/order", { state: { cartItems, totalPrice } })
+            }>
               이전
             </button>
             <button

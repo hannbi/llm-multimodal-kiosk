@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '../styles/Menu.css';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+import { useLocation } from "react-router-dom";
 
 function MenuCoffee() {
   const [activeCategory, setActiveCategory] = useState('커피');
@@ -25,6 +26,8 @@ function MenuCoffee() {
   const [availableSizes, setAvailableSizes] = useState([]);
   const [availableTemps, setAvailableTemps] = useState([]);
 
+  const [cartItems, setCartItems] = useState([]);
+  const location = useLocation();
 
   // 눈 깜빡임 효과
   useEffect(() => {
@@ -98,6 +101,18 @@ function MenuCoffee() {
       );
   }, [selectedTemp, selectedSize]);
 
+  useEffect(() => {
+    if (location.state?.cartItems) {
+      setCartItems(location.state.cartItems);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+  if (location.state?.forceTouch === true) {
+    setIsTouchMode(true);
+  }
+}, [location.state]);
+  
 
   const handleMenuClick = (item) => {
     if (!isTouchMode) {
@@ -126,12 +141,46 @@ function MenuCoffee() {
   };
 
   const handleAddToCart = () => {
-    console.log("✅ 선택된 주문 옵션");
-    console.log("온도:", selectedTemp);
-    console.log("사이즈:", selectedSize);
-    console.log("추가옵션:", selectedOption);
+    if (!selectedTemp || !selectedSize) {
+      alert("온도와 사이즈를 모두 선택해주세요!");
+      return; // 담기 실패
+    }
+
+    const newItem = {
+      name: selectedMenu.name,
+      price: selectedMenu.price,
+      temp: selectedTemp,
+      size: selectedSize,
+      option: selectedOption,
+      img: selectedMenu.img,
+      qty: 1
+    };
+
+    setCartItems(prev => [...prev, newItem]);
+
     handleCloseModal();
   };
+
+  const updateQty = (index, diff) => {
+    setCartItems(prev =>
+      prev.map((item, i) =>
+        i === index
+          ? { ...item, qty: Math.max(1, item.qty + diff) }
+          : item
+      )
+    );
+  };
+
+
+  const removeFromCart = (index) => {
+    setCartItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const totalPrice = cartItems.reduce(
+    (sum, item) => sum + item.price * item.qty,
+    0
+  );
+
 
   const renderFooterOptions = (onVoiceClick) => (
     <div className="footer-options">
@@ -243,36 +292,53 @@ function MenuCoffee() {
             {/* 카드들을 감싸는 회색 박스 */}
             <div className="cart-box-wrapper">
               <div className="cart-slider-area">
-                <button className="arrow left">◀</button>
-                {[
-                  { name: '아메리카노', qty: 1 },
-                  { name: '아메리카노', qty: 2 },
-                  { name: '아메리카노', qty: 1 },
-                ].map((item, idx) => (
+
+                {cartItems.length === 0 && (
+                  <div style={{ padding: 20, opacity: 0.7 }}>담긴 메뉴가 없습니다.</div>
+                )}
+
+                {cartItems.map((item, idx) => (
                   <div className="cart-card" key={idx}>
-                    <img src="/images/coffee.png" alt={item.name} />
+                    <img src={item.img} alt={item.name} />
                     <p>{item.name}</p>
-                    <div className="qty-controller">
-                      <button>-</button>
-                      <span>{item.qty}</span>
-                      <button>+</button>
+
+                    <div className="cart-option">
+                      {item.temp} / {item.size}
+                      {item.option && ` / ${item.option}`}
                     </div>
-                    <button className="remove-btn">X</button>
+
+                    <div className="qty-controller">
+                      <button onClick={() => updateQty(idx, -1)}>-</button>
+                      <span>{item.qty}</span>
+                      <button onClick={() => updateQty(idx, 1)}>+</button>
+                    </div>
+
+                    <button className="remove-btn" onClick={() => removeFromCart(idx)}>X</button>
                   </div>
                 ))}
-                <button className="arrow right">▶</button>
               </div>
+
             </div>
 
-            {/* ✅ 결제 정보 박스 */}
+            {/* 결제 정보 박스 */}
             <div className="summary-box">
               <div className="summary-title">총 결제금액</div>
-              <div className="summary-price">₩12,000원</div>
+              <div className="summary-price">
+                ₩{totalPrice.toLocaleString()}원
+              </div>
               <div className="summary-buttons">
                 <button className="cancel-order">전체 취소</button>
-                <button className="confirm-order" onClick={() => navigate('/order')}>
+                <button
+                  className="confirm-order"
+                  onClick={() =>
+                    navigate("/order", {
+                      state: { cartItems, totalPrice },
+                    })
+                  }
+                >
                   주문 하기
                 </button>
+
               </div>
             </div>
 

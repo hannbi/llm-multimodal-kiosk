@@ -1,8 +1,5 @@
-import React from 'react';
-import Home from './pages/Home';
+// src/App.jsx
 
-function App() {
-  return <Home />;
+export default function App() {
+  return null;
 }
-
-export default App;
