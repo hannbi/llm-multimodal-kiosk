@@ -7,6 +7,8 @@ import { useLocation } from "react-router-dom";
 function MenuCoffee() {
   const [activeCategory, setActiveCategory] = useState('커피');
   const navigate = useNavigate();
+  const [showOptionWarning, setShowOptionWarning] = useState(false);
+
   const [showModal, setShowModal] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [isTouchMode, setIsTouchMode] = useState(false);
@@ -123,12 +125,27 @@ function MenuCoffee() {
 
       // 메뉴별 선택 가능한 옵션만 표시
       fetch(`http://localhost:5000/api/menu/${item.name}/options`)
-        .then((res) => res.json())
-        .then((data) => {
-          setAvailableSizes(data.sizes);
-          setAvailableTemps(data.temperatures);
-        })
-        .catch((err) => console.error("옵션 불러오기 실패:", err));
+  .then((res) => res.json())
+  .then((data) => {
+    setAvailableSizes(data.sizes || []);
+    setAvailableTemps(data.temperatures || []);
+
+    // 🔥 온도 옵션이 1개면 자동 선택 (빙수/아이스크림 ICE 자동 선택)
+    if (data.temperatures && data.temperatures.length === 1) {
+      setSelectedTemp(data.temperatures[0]);
+    } else {
+      setSelectedTemp(null);
+    }
+
+    // 🔥 사이즈 옵션도 1개면 자동 선택 (필요하면)
+    if (data.sizes && data.sizes.length === 1) {
+      setSelectedSize(data.sizes[0]);
+    } else {
+      setSelectedSize(null);
+    }
+  })
+  .catch((err) => console.error("옵션 불러오기 실패:", err));
+
     }
   };
 
@@ -140,26 +157,52 @@ function MenuCoffee() {
     setSelectedOption(null);
   };
 
-  const handleAddToCart = () => {
-    if (!selectedTemp || !selectedSize) {
-      alert("온도와 사이즈를 모두 선택해주세요!");
-      return; // 담기 실패
-    }
+const handleAddToCart = () => {
+  const hasTempOption = availableTemps.length > 0;
+  const hasSizeOption = availableSizes.length > 0;
 
-    const newItem = {
-      name: selectedMenu.name,
-      price: selectedMenu.price,
-      temp: selectedTemp,
-      size: selectedSize,
-      option: selectedOption,
-      img: selectedMenu.img,
-      qty: 1
-    };
+  // 추가옵션이 필요한 카테고리인지 판단 (기존 UI 조건과 동일하게)
+  const needExtraOption = !['빙수 · 아이스크림', '베이커리', '스낵'].includes(activeCategory);
 
-    setCartItems(prev => [...prev, newItem]);
+  // 온도 옵션 필요인데 선택 안 했으면 경고
+  if (hasTempOption && !selectedTemp) {
+    setShowOptionWarning(true);
+    return;
+  }
 
-    handleCloseModal();
+  // 사이즈 옵션 필요인데 선택 안 했으면 경고
+  if (hasSizeOption && !selectedSize) {
+    setShowOptionWarning(true);
+    return;
+  }
+
+  // 🔥 추가옵션 필요하지만 선택 안 했을 때 (여기 새로 추가됨)
+  if (needExtraOption && !selectedOption) {
+    setShowOptionWarning(true);
+    return;
+  }
+
+  // 온도 옵션이 ICE 하나만 있을 경우 자동 선택
+  if (hasTempOption && availableTemps.length === 1 && !selectedTemp) {
+    setSelectedTemp(availableTemps[0]);
+  }
+
+  const newItem = {
+    name: selectedMenu.name,
+    price: selectedMenu.price,
+    temp: selectedTemp,
+    size: selectedSize,
+    option: selectedOption,
+    img: selectedMenu.img,
+    qty: 1
   };
+
+  setCartItems(prev => [...prev, newItem]);
+  handleCloseModal();
+};
+
+
+
 
   const updateQty = (index, diff) => {
     setCartItems(prev =>
@@ -346,6 +389,24 @@ function MenuCoffee() {
           </div>
         )}
       </footer>
+{showOptionWarning && (
+  <div className="modal-overlay option-warning-overlay">
+
+    <div className="modal-box switch-modal">
+      <h3>옵션을 선택해주세요</h3>
+      <p>필수 옵션을 모두 선택해야 담을 수 있습니다.</p>
+
+      <div className="modal-buttons switch-buttons">
+        <button
+          onClick={() => setShowOptionWarning(false)}
+          className="switch-confirm"
+        >
+          확인
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* 직원 호출 모달 */}
       {showStaffCallModal && !isStaffCalling && (

@@ -114,23 +114,54 @@
 }
 
 .order-scroll {
-  height: 40vh;      /* ✅ 무조건 고정 높이 */
+  height: 30vh;      /* ✅ 무조건 고정 높이 */
   overflow-y: auto;   /* ✅ 넘치면 내부에서만 스크롤 */
-  padding-right: 15px;
+
    margin-top: 50px;
 }
+
+.order-total-box {
+  width: 95%;
+  max-width: 820px;
+  margin: 40px auto 20px auto;
+  padding: 45px;
+  border-radius: 12px;
+
+  display: flex;
+  /* 🔥 내부 요소 세로 정렬 */
+  align-items: center;      /* 🔥 가운데 정렬 */
+  justify-content: center;  /* 🔥 수직 가운데 */
+  gap: 30px;                /* 🔥 총 결제금액 ↔ 금액 간격 */
+
+  font-size: 40px;
+  font-weight: bold;
+  text-align: center;       /* 🔥 텍스트도 중앙 정렬 */
+}
+
+.order-total-price {
+  font-size: 45px;
+  color: #d60000;
+  font-weight: 800;
+}
+
+
 
 
 
 .order-item-card {
   background-color: white;
-  border-radius: 12px;
+  width: 95%;                 /* ⬅ 총 결제금액 박스와 동일 */
+  max-width: 820px;           /* ⬅ 동일 */
+  margin: 0 auto 30px auto;   /* ⬅ 가운데 정렬 + 아래 간격 */
+  
+  padding: 45px;              /* ⬅ 동일 */
+  border-radius: 12px;        /* ⬅ 동일 */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+
   display: flex;
   align-items: center;
-  padding: 45px;
-  margin-bottom: 30px;
 }
+
 
 .order-item-image {
   width: 150px;

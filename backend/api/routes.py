@@ -4,9 +4,12 @@ import sqlite3
 router = APIRouter()
 
 def get_conn():
-    conn = sqlite3.connect("C:/Users/82109/Desktop/llm-kiosk-db/kiosk.db")
+    conn = sqlite3.connect(
+        "C:/Users/은빈/OneDrive - 순천대학교/문서/GitHub/LLM-Multimodal-Kiosk/backend/kiosk.db"
+    )
     conn.row_factory = sqlite3.Row
     return conn
+
 
 # 전체 메뉴 리스트
 @router.get("/menu")

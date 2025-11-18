@@ -53,13 +53,7 @@ function MenuOrder() {
         <div className="order-list-container">
           <h2 className="confirm-title">주문 내역을 확인해주세요</h2>
 
-          {/* 총 결제 금액 */}
-          <div className="order-total-box">
-            총 결제금액
-            <span className="order-total-price">
-              ₩ {totalPrice.toLocaleString()}원
-            </span>
-          </div>
+
 
           {/* 스크롤 영역 */}
           <div className="order-scroll">
@@ -99,6 +93,14 @@ function MenuOrder() {
                 </div>
               ))
             )}
+          </div>
+
+          {/* 총 결제 금액 */}
+          <div className="order-total-box">
+            총 결제금액 :
+            <span className="order-total-price">
+              ₩ {totalPrice.toLocaleString()}원
+            </span>
           </div>
 
           {/* 버튼 */}

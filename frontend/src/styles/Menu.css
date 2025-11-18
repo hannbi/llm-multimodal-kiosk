@@ -76,7 +76,7 @@
 
 .cart-card p {
   margin: 0.5rem 0;
-  font-size: 1rem;
+  font-size: 1.3rem;
   font-weight: bold;
 }
 
@@ -112,25 +112,31 @@
 
 .summary-box {
   position: absolute;
-  top: 3.4rem;
+  top: 1.7rem;
   left: 44rem;
   width: 300px;
-  height: 220px;
+  height: 275px;
   background: white;
   border-radius: 16px;
   padding: 2rem;
   text-align: left;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+
+  /* 🔥 추가해야 하는 부분 */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
+
 .summary-title {
-  font-size: 1.2rem;
+  font-size: 2rem;
   font-weight: bold;
   margin-bottom: 0.5rem;
 }
 
 .summary-price {
-  font-size: 1.8rem;
+  font-size: 2.5rem;
   font-weight: 900;
   color: red;
   margin-bottom: 1rem;
@@ -145,8 +151,8 @@
 .summary-buttons .cancel-order,
 .summary-buttons .confirm-order {
   flex: 1;
-  padding: 0.6rem 0.4rem;
-  font-size: 1rem;
+  padding: 0.8rem 0.4rem;
+  font-size: 1.2rem;
   border-radius: 8px;
 }
 
@@ -365,7 +371,6 @@
 }
 
 .footer-options span {
-  margin-left: 1rem;
   font-size: 1rem;
 }
 
@@ -379,7 +384,12 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 999;
+
+  z-index: 2000;   /* 기본 모달 레이어 */
+}
+
+.option-warning-overlay {
+  z-index: 3000 !important;  /* 최상단 */
 }
 
 .modal-box {
@@ -466,7 +476,7 @@
 .option-add {
   background: #e60023;
   color: white;
-  padding: 10px 20px;
+  padding: 30px 30px;
   border: none;
   border-radius: 8px;
 }
