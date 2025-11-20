@@ -7,6 +7,58 @@ import { useLocation } from "react-router-dom";
 function MenuCoffee() {
   const [activeCategory, setActiveCategory] = useState('커피');
   const navigate = useNavigate();
+  // 🔥 음성 녹음 + 서버 전송 함수 추가 (필수)
+  const startRecording = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+  const options = { mimeType: "audio/webm; codecs=opus" };  
+  const recorder = new MediaRecorder(stream, options);
+
+  const chunks = [];
+
+  recorder.ondataavailable = (e) => {
+  if (e.data.size > 0) chunks.push(e.data);
+};
+
+
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: "audio/webm; codecs=opus" });
+
+    sendVoice(blob);
+  };
+
+  recorder.start();
+  setTimeout(() => recorder.stop(), 3000);
+};
+
+const sendVoice = async (blob) => {
+  const formData = new FormData();
+  formData.append("file", blob, "audio.webm");
+
+  const res = await fetch("http://localhost:5000/voice", {
+    method: "POST",
+    body: formData,
+  });
+
+const data = await res.json();
+
+console.log("✨ STT:", data.user_text);
+console.log("🤖 AI:", data.ai_text);
+
+setAiText(data.ai_text);
+
+// 🔥 결제 intent 감지 → 페이지 이동
+if (data.next_action === "go_payment") {
+  navigate("/order_voice", { state: { cartItems, totalPrice }});
+}
+
+// 음성 재생
+const audio = new Audio("http://localhost:5000/" + data.audio_url);
+audio.play();
+
+};
+
+
   const [showOptionWarning, setShowOptionWarning] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
@@ -18,6 +70,7 @@ function MenuCoffee() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
   const [isTalking, setIsTalking] = useState(false);
+  const [aiText, setAiText] = useState("어서오세요! 음성으로 주문해주세요.");  // ① 추가
   const [isBlinking, setIsBlinking] = useState(false);
   const [showStaffCallModal, setShowStaffCallModal] = useState(false);
   const [isStaffCalling, setIsStaffCalling] = useState(false);
@@ -30,6 +83,39 @@ function MenuCoffee() {
 
   const [cartItems, setCartItems] = useState([]);
   const location = useLocation();
+  
+useEffect(() => {
+  let ignore = false;
+
+  if (!ignore) {
+    fetch("http://localhost:5000/speak/welcome")
+      .then(res => res.json())
+      .then(data => {
+        if (data.audio_url) {
+          new Audio("http://localhost:5000/" + data.audio_url).play();
+        }
+      });
+  }
+
+  return () => {
+    ignore = true;
+  };
+}, [location.pathname]);
+
+ useEffect(() => {
+  if (sessionStorage.getItem("welcomePlayed") === "true") return;
+
+  fetch("http://localhost:5000/speak/welcome")
+    .then(res => res.json())
+    .then(data => {
+      if (data.audio_url) {
+        new Audio("http://localhost:5000/" + data.audio_url).play();
+      }
+      sessionStorage.setItem("welcomePlayed", "true");
+    })
+    .catch(err => console.error("음성 재생 실패:", err));
+}, []);
+
 
   // 눈 깜빡임 효과
   useEffect(() => {
@@ -323,11 +409,18 @@ const handleAddToCart = () => {
 
 
             <div className="welcome-message">
-              어서오세요<br />
-              음성주문 모드 사용중입니다<br />
-              원하시는 음료를 말씀해주세요.
-            </div>
-            {renderFooterOptions(() => setShowVoiceSwitchModal(true))}
+  {aiText}
+</div>
+            
+          <button 
+  className="voice-record-btn"
+  onClick={startRecording}
+  style={{ background: 'red', zIndex: 9999 }}
+>
+  🎤 말하기
+</button>
+
+{renderFooterOptions(() => setShowVoiceSwitchModal(true))}
           </>
         ) : (
           <div className="touch-mode-footer">

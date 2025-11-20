@@ -1,40 +1,85 @@
 import os
-# import sounddevice as sd   # 🔥 녹음 불필요 → 주석
-# import numpy as np
-# import scipy.io.wavfile as wav
-# import tempfile
-from gpt_response import get_gpt_response
-from text_to_speech import speak
-# from google.cloud import speech
-# import io
+import pyaudio
+from google.cloud import speech
+from six.moves import queue
 
-# Google 서비스 계정 키 경로 (STT 안 쓰면 필요 없음, 남겨둬도 OK)
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "C:/Users/82109/Desktop/V3X_project/v3xProject/secrets/v3x-project-4fab2d807b9f.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\Users\은빈\OneDrive - 순천대학교\문서\GitHub\LLM-Multimodal-Kiosk\backend\v3x-kiosk-project-abb01c1d5436.json"
 
-# SAMPLE_RATE = 16000
-# DURATION = 5  # 초 단위 녹음 시간
+RATE = 16000
+CHUNK = int(RATE / 10)  # 100ms
 
-# 🔥 STT 대신 직접 입력으로 대체
-def get_text_input():
-    # 1) 하드코딩 (항상 같은 문장)
-    # return "아메리카노 하나 주세요"
-    
-    # 2) 실행할 때마다 입력
-    return input("👉 주문 문장을 직접 입력하세요: ")
+class MicrophoneStream:
+    def __init__(self, rate, chunk):
+        self._rate = rate
+        self._chunk = chunk
 
-if __name__ == "__main__":
-    # 원래: 녹음 → wav → transcribe
-    # audio = record_audio()
-    # wav_path = save_temp_wav(audio)
-    # text = transcribe(wav_path)
-    # os.remove(wav_path)
+        self._buff = queue.Queue()
+        self.closed = True
 
-    # 수정: 터미널 입력 받기
-    text = get_text_input()
-    print(f"📝 입력된 텍스트: {text}")
+    def __enter__(self):
+        self._audio_interface = pyaudio.PyAudio()
+        self._audio_stream = self._audio_interface.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=self._rate,
+            input=True,
+            frames_per_buffer=self._chunk,
+            stream_callback=self._fill_buffer,
+        )
 
-    gpt_answer = get_gpt_response(text)
-    print(f"🤖 GPT 응답: {gpt_answer}")
+        self.closed = False
+        return self
 
-    # 필요시 음성 출력 → 디버깅 중이면 주석 처리 가능
-    # speak(gpt_answer)
+    def __exit__(self, type, value, traceback):
+        self._audio_stream.stop_stream()
+        self._audio_stream.close()
+        self.closed = True
+        self._buff.put(None)
+        self._audio_interface.terminate()
+
+    def _fill_buffer(self, in_data, frame_count, time_info, status_flags):
+        self._buff.put(in_data)
+        return None, pyaudio.paContinue
+
+    def generator(self):
+        while not self.closed:
+            chunk = self._buff.get()
+            if chunk is None:
+                return
+            yield chunk
+
+
+def listen_real_time(callback):
+    client = speech.SpeechClient()
+
+    config = speech.RecognitionConfig(
+        encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+        sample_rate_hertz=RATE,
+        language_code="ko-KR"
+    )
+
+    streaming_config = speech.StreamingRecognitionConfig(
+        config=config,
+        interim_results=False  # 중간 텍스트도 받고 싶으면 True
+    )
+
+    with MicrophoneStream(RATE, CHUNK) as stream:
+        audio_generator = stream.generator()
+        requests = (
+            speech.StreamingRecognizeRequest(audio_content=content)
+            for content in audio_generator
+        )
+
+        responses = client.streaming_recognize(streaming_config, requests)
+
+        for response in responses:
+            for result in response.results:
+                text = result.alternatives[0].transcript
+                callback(text)
+# 🔥 main.py에서 그대로 import해서 쓸 수 있도록 wrapper 함수 추가
+def transcribe_from_mic(filepath):
+    import whisper
+    model = whisper.load_model("small")
+    result = model.transcribe(filepath)
+    return result["text"]
+
