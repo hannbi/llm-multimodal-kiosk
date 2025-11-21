@@ -82,5 +82,5 @@ __marimo__/
 
 # Menu IMG 
 backend/uploads
-
+backend/kiosk.db
 *.json
