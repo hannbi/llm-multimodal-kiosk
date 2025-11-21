@@ -5,9 +5,11 @@ import io
 from google.cloud import texttospeech
 import playsound
 import pygame
+from dotenv import load_dotenv
 
-# Google 서비스 계정 키 경로 설정 (절대 경로 or 상대 경로)
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "C:/Users/82109/Desktop/V3X_project/v3xProject/secrets/v3x-project-4fab2d807b9f.json"
+# Google 서비스 계정 키 경로 설정
+load_dotenv()
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 def speak(text):
     client = texttospeech.TextToSpeechClient()
