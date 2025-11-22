@@ -3,7 +3,12 @@
 import os
 from google.cloud import texttospeech
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\Users\은빈\OneDrive - 순천대학교\문서\GitHub\LLM-Multimodal-Kiosk\backend\v3x-kiosk-project-abb01c1d5436.json"
+from dotenv import load_dotenv
+load_dotenv()
+
+google_cred = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+google_cred = os.path.abspath(google_cred)
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = google_cred
 
 def speak(text, output_path):
     client = texttospeech.TextToSpeechClient()
@@ -26,7 +31,7 @@ def speak(text, output_path):
         audio_config=audio_config,
     )
 
-    # 🔥 mp3 파일 서버에 저장
+    # mp3 파일 서버에 저장
     with open(output_path, "wb") as out:
         out.write(response.audio_content)
 

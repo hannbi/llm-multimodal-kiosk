@@ -2,8 +2,18 @@ import os
 import pyaudio
 from google.cloud import speech
 from six.moves import queue
+import os
+from dotenv import load_dotenv
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\Users\은빈\OneDrive - 순천대학교\문서\GitHub\LLM-Multimodal-Kiosk\backend\v3x-kiosk-project-abb01c1d5436.json"
+load_dotenv()
+google_cred = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+google_cred = os.path.abspath(google_cred)
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = google_cred
+
+if not os.path.exists(google_cred):
+    print("❌ GOOGLE_APPLICATION_CREDENTIALS 파일 없음:", google_cred)
+else:
+    print("✔ GOOGLE_APPLICATION_CREDENTIALS OK:", google_cred)
 
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
@@ -76,8 +86,10 @@ def listen_real_time(callback):
             for result in response.results:
                 text = result.alternatives[0].transcript
                 callback(text)
-# 🔥 main.py에서 그대로 import해서 쓸 수 있도록 wrapper 함수 추가
+                
 def transcribe_from_mic(filepath):
+    print("🎧 Whisper 파일 경로:", filepath)
+
     import whisper
     model = whisper.load_model("small")
     result = model.transcribe(filepath)

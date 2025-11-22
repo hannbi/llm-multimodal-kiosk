@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import time
 from speech_to_text import transcribe_from_mic
 
@@ -11,6 +14,7 @@ from api.routes import router
 
 from fastapi.staticfiles import StaticFiles
 import shutil, uuid
+import os
 
 # 웰컴멘트 중복 재생 방지
 last_welcome_time = 0
@@ -75,7 +79,10 @@ async def upload_image(file: UploadFile = File(...)):
 
     image_url = f"http://localhost:5000/uploads/{filename}"
 
-    conn = sqlite3.connect("kiosk.db")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, "kiosk.db")
+    conn = sqlite3.connect(db_path)
+
     cur = conn.cursor()
     cur.execute("INSERT INTO SpotImage (image_url) VALUES (?)", (image_url,))
     conn.commit()
@@ -264,7 +271,11 @@ def process_intent(intent, slots):
 # DB 조회 함수
 # -----------------------------
 def db_get_menu(name):
-    conn = sqlite3.connect("kiosk.db")
+    import os
+    base_dir = os.path.dirname(os.path.abspath(__file__))   # backend/
+    db_path = os.path.join(base_dir, "kiosk.db")            # backend/kiosk.db
+
+    conn = sqlite3.connect(db_path)   
     cur = conn.cursor()
 
     cur.execute("""

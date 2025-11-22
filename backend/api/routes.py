@@ -1,20 +1,21 @@
 from fastapi import APIRouter, HTTPException
 import sqlite3
-
+import os
 router = APIRouter()
 
-def get_conn():
-    conn = sqlite3.connect(
-        "C:/Users/은빈/OneDrive - 순천대학교/문서/GitHub/LLM-Multimodal-Kiosk/backend/kiosk.db"
-    )
-    conn.row_factory = sqlite3.Row
+def get_db():
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    db_path = os.path.join(base_dir, "kiosk.db")
+    
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row   # ✔ 중요!!
     return conn
 
 
 # 전체 메뉴 리스트
 @router.get("/menu")
 def get_menu():
-    conn = get_conn()
+    conn = get_db()
     rows = conn.execute("""
         SELECT m.menu_id, m.name, m.category,
                m.image_url,
@@ -29,7 +30,7 @@ def get_menu():
 # 옵션별 상세 정보 (가격, 칼로리 등)
 @router.get("/menu/{menu_name}/detail")
 def get_product_detail(menu_name: str, size: str, temperature: str):
-    conn = get_conn()
+    conn = get_db()
     cur = conn.cursor()
     cur.execute("""
         SELECT 
@@ -61,7 +62,7 @@ def get_product_detail(menu_name: str, size: str, temperature: str):
 # 메뉴별 선택 가능한 옵션 반환
 @router.get("/menu/{menu_name}/options")
 def get_available_options(menu_name: str):
-    conn = get_conn()
+    conn = get_db()
     cur = conn.cursor()
     cur.execute("""
         SELECT DISTINCT size, temperature_type
