@@ -40,23 +40,76 @@ const sendVoice = async (blob) => {
     body: formData,
   });
 
-const data = await res.json();
+  const data = await res.json();
 
-console.log("✨ STT:", data.user_text);
-console.log("🤖 AI:", data.ai_text);
+  setAiText(data.ai_text);
 
-setAiText(data.ai_text);
+  // 🔥 menuData가 로딩되지 않았다면 모달 띄우기 중단
+  if (!menuData || Object.keys(menuData).length === 0) {
+    console.log("⚠ menuData 아직 로딩 안됨");
+    return;
+  }
 
-// 🔥 결제 intent 감지 → 페이지 이동
-if (data.next_action === "go_payment") {
-  navigate("/order_voice", { state: { cartItems, totalPrice }});
+  // 🔥 GPT가 BuildOrder + menu_name을 보냈으면 옵션 모달 자동 오픈
+// 🔥 GPT가 BuildOrder + menu_name을 보냈으면 옵션 모달 자동 오픈
+if (data.intent === "BuildOrder" && data.slots?.menu_name) {
+  const menuName = data.slots.menu_name;
+
+  const foundMenu = Object.values(menuData)
+    .flat()
+    .find((m) => m.name === menuName);
+
+  if (foundMenu) {
+    setSelectedMenu(foundMenu);
+    setShowModal(true);
+
+    fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
+      .then((res) => res.json())
+      .then((opt) => {
+        setAvailableSizes(opt.sizes || []);
+        setAvailableTemps(opt.temperatures || []);
+      });
+  }
 }
 
-// 음성 재생
-const audio = new Audio("http://localhost:5000/" + data.audio_url);
-audio.play();
 
+// ✅🔥 추가된 부분: 옵션 자동 선택 (OptionSelect intent 처리)
+if (data.intent === "OptionSelect") {
+  const { temperature, size } = data.slots;
+
+  if (!showModal && selectedMenu) {
+    setShowModal(true);
+  }
+
+  // 온도 자동 선택
+  if (temperature) {
+    setSelectedTemp(temperature);     // UI 버튼 자동 클릭됨
+  }
+
+  // 사이즈 자동 선택
+  if (size) {
+    setSelectedSize(size);            // UI 버튼 자동 클릭됨
+  }
+}
+if (data.intent === "AddToCart") {
+  // 기존 장바구니 담기 로직 실행
+  handleAddToCart();
+
+  // 옵션창 자동 닫기
+  setShowModal(false);
+
+  // 옵션 초기화
+  setSelectedTemp(null);
+  setSelectedSize(null);
+  setSelectedOption(null);
+}
+
+
+  // 음성 재생
+  const audio = new Audio("http://localhost:5000/" + data.audio_url);
+  audio.play();
 };
+
 
 
   const [showOptionWarning, setShowOptionWarning] = useState(false);

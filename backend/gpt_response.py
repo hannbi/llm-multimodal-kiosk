@@ -24,7 +24,8 @@ def get_gpt_response(user_text: str):
 - ShowOrder
 - ResetOrder
 - Payment
-- OptionSelect        # 🔥 추가됨!
+- OptionSelect     
+- AddToCart
 - Fallback
 
 규칙:
@@ -33,6 +34,14 @@ def get_gpt_response(user_text: str):
 - intent/slots는 예시 규칙 그대로 따른다.
 - 사용자가 옵션(HOT/ICE/Small/Large)만 말한 경우 OptionSelect 로 분류한다.
 - 사용자가 처음부터 옵션까지 말하면 slots 안에 menu_name + size + temperature 모두 넣는다.
+
+# 🔥 AddToCart 관련 규칙
+- 사용자가 아래 표현 중 하나라도 말하면 AddToCart 로 분류해야 한다:
+  "담아", "담아줘", "담아주세요", "담기", "담아줄래", 
+  "넣어줘", "넣어주세요", "넣어", "네 담을게요", 
+  "응 담아줘", "오케이 담아", "좋아 담아", "확인 담아"
+- AddToCart 일 때 slots 는 비워둔다: { }
+- response 는 "장바구니에 담을게요." 처럼 자연스러운 문장으로 만든다.
 
 예시:
 

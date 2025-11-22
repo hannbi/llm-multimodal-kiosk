@@ -116,10 +116,14 @@ async def process_voice(file: UploadFile = File(...)):
     # 4) TTS 생성
     output_path = f"uploads/{uuid.uuid4()}.mp3"
     speak(answer, output_path)
+
     next_action = "go_payment" if intent == "Payment" else None
+
     return {
-         "user_text": text,
+        "user_text": text,
         "ai_text": answer,
+        "intent": intent,
+        "slots": slots,
         "audio_url": output_path,
         "next_action": next_action
     }
@@ -170,30 +174,13 @@ def process_intent(intent, slots):
         if not menu:
             return f"{name}는 없는 메뉴예요."
 
-        # 옵션 선택이 필요한 경우 → 질문으로 유도
         state["last_menu"] = name
         state["pending"] = {"name": name, "qty": qty}
 
-        if menu["need_temp"]:
-            return f"{name}는 HOT / ICE 중 어떤 걸로 드릴까요?"
-
-        if menu["need_size"]:
-            return f"{name}는 Small / Large 중 어떤 걸로 드릴까요?"
-
-        # 옵션 필요 없음 → 바로 장바구니
-        cart.append({
-            "name": name,
-            "qty": qty,
-            "price": menu["price"]
-        })
-
-        state["pending"] = {}
-        state["last_menu"] = None
-
-        return f"{name} {qty}잔 장바구니에 담았어요!"
+        return "원하시는 온도와 사이즈를 말씀해주세요."
 
     # --------------------
-    # 2) OptionSelect (🔥 새로 추가)
+    # 2) OptionSelect
     # --------------------
     if intent == "OptionSelect":
         temp = slots.get("temperature")
@@ -202,40 +189,48 @@ def process_intent(intent, slots):
         if not state.get("last_menu"):
             return "어떤 음료에 옵션을 적용할까요?"
 
-        menu_name = state["last_menu"]
         pending = state["pending"]
-        menu = db_get_menu(menu_name)
 
-        # 옵션 저장
         if temp:
             pending["temperature"] = temp
         if size:
             pending["size"] = size
 
-        # 필요한 옵션 확인
-        need_temp = menu["need_temp"]
-        need_size = menu["need_size"]
+        has_temp = "temperature" in pending
+        has_size = "size" in pending
 
-        if need_temp and "temperature" not in pending:
-            return f"{menu_name}는 HOT / ICE 중 어떤 걸로 드릴까요?"
+        if has_temp and not has_size:
+            return f"{pending['temperature']} 선택되었어요. 사이즈도 말씀해주세요."
+        if has_size and not has_temp:
+            return f"{pending['size']} 선택되었어요. 온도도 말씀해주세요."
 
-        if need_size and "size" not in pending:
-            return f"{menu_name}는 Small / Large 중 어떤 걸로 드릴까요?"
+        if has_temp and has_size:
+            return "선택이 완료되었어요. 담을까요?"
 
-        # 모든 옵션 선택 완료 → 장바구니 추가
+    # --------------------
+    # 3) AddToCart (🔥 신규 추가)
+    # --------------------
+    if intent == "AddToCart":
+        pending = state.get("pending")
+
+        if not pending or not pending.get("name"):
+            return "담을 메뉴가 없어요."
+
+        name = pending.get("name")
+        qty = pending.get("qty", 1)
+        temp = pending.get("temperature")
+        size = pending.get("size")
+
         cart.append({
-            "name": menu_name,
-            "qty": pending.get("qty", 1),
-            "price": menu["price"],
-            "temperature": pending.get("temperature"),
-            "size": pending.get("size"),
+            "name": name,
+            "qty": qty,
+            "temperature": temp,
+            "size": size
         })
 
-        # 초기화
         state["pending"] = {}
-        state["last_menu"] = None
 
-        return f"{menu_name}({pending.get('temperature')}, {pending.get('size')}) 담았어요!"
+        return f"{name} {qty}잔 담았어요."
 
     # --------------------
     # 장바구니 보기
@@ -275,7 +270,7 @@ def db_get_menu(name):
     base_dir = os.path.dirname(os.path.abspath(__file__))   # backend/
     db_path = os.path.join(base_dir, "kiosk.db")            # backend/kiosk.db
 
-    conn = sqlite3.connect(db_path)   
+    conn = sqlite3.connect(db_path)
     cur = conn.cursor()
 
     cur.execute("""
