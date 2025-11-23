@@ -28,7 +28,7 @@ function MenuCoffee() {
   };
 
   recorder.start();
-  setTimeout(() => recorder.stop(), 3000);
+  setTimeout(() => recorder.stop(), 6000);
 };
 
 const sendVoice = async (blob) => {
@@ -315,11 +315,7 @@ const handleAddToCart = () => {
     return;
   }
 
-  // 🔥 추가옵션 필요하지만 선택 안 했을 때 (여기 새로 추가됨)
-  if (needExtraOption && !selectedOption) {
-    setShowOptionWarning(true);
-    return;
-  }
+
 
   // 온도 옵션이 ICE 하나만 있을 경우 자동 선택
   if (hasTempOption && availableTemps.length === 1 && !selectedTemp) {

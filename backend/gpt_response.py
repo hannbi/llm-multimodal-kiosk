@@ -35,6 +35,20 @@ def get_gpt_response(user_text: str):
 - 사용자가 옵션(HOT/ICE/Small/Large)만 말한 경우 OptionSelect 로 분류한다.
 - 사용자가 처음부터 옵션까지 말하면 slots 안에 menu_name + size + temperature 모두 넣는다.
 
+# 옵션 강제 규칙
+아래 표현이 들어간 문장은 절대 BuildOrder로 분류하지 않는다. 항상 OptionSelect 로 분류한다.
+온도 표현:
+"뜨겁게", "뜨거운 걸로", "뜨거워", "핫으로", "Hot", "hot"
+"아이스로", "차갑게", "차가운 걸로", "Iced", "iced"
+
+사이즈 표현:
+"큰 걸로", "라지", "Large"
+"작은 걸로", "스몰", "Small"
+
+이 경우 slots 에는 menu_name 을 절대 포함하지 않고,
+온도/사이즈만 넣는다.
+
+
 # 🔥 AddToCart 관련 규칙
 - 사용자가 아래 표현 중 하나라도 말하면 AddToCart 로 분류해야 한다:
   "담아", "담아줘", "담아주세요", "담기", "담아줄래", 

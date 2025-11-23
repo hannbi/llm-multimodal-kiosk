@@ -91,7 +91,7 @@ def transcribe_from_mic(filepath):
     print("🎧 Whisper 파일 경로:", filepath)
 
     import whisper
-    model = whisper.load_model("small")
+    model = whisper.load_model("base")
     result = model.transcribe(filepath)
     return result["text"]
 
