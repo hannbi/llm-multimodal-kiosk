@@ -9,106 +9,178 @@ function MenuCoffee() {
   const navigate = useNavigate();
   // 🔥 음성 녹음 + 서버 전송 함수 추가 (필수)
   const startRecording = async () => {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-  const options = { mimeType: "audio/webm; codecs=opus" };  
-  const recorder = new MediaRecorder(stream, options);
+    const options = { mimeType: "audio/webm; codecs=opus" };
+    const recorder = new MediaRecorder(stream, options);
 
-  const chunks = [];
+    const chunks = [];
 
-  recorder.ondataavailable = (e) => {
-  if (e.data.size > 0) chunks.push(e.data);
-};
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
 
 
-  recorder.onstop = () => {
-    const blob = new Blob(chunks, { type: "audio/webm; codecs=opus" });
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: "audio/webm; codecs=opus" });
 
-    sendVoice(blob);
+      sendVoice(blob);
+    };
+
+    recorder.start();
+    setTimeout(() => recorder.stop(), 6000);
   };
 
-  recorder.start();
-  setTimeout(() => recorder.stop(), 6000);
-};
+  const sendVoice = async (blob) => {
+    const formData = new FormData();
+    formData.append("file", blob, "audio.webm");
 
-const sendVoice = async (blob) => {
-  const formData = new FormData();
-  formData.append("file", blob, "audio.webm");
+    const res = await fetch("http://localhost:5000/voice", {
+      method: "POST",
+      body: formData,
+    });
 
-  const res = await fetch("http://localhost:5000/voice", {
-    method: "POST",
-    body: formData,
-  });
+    const data = await res.json();
 
-  const data = await res.json();
+    setAiText(data.ai_text);
 
-  setAiText(data.ai_text);
+    // 🔥 menuData가 로딩되지 않았다면 모달 띄우기 중단
+    if (!menuData || Object.keys(menuData).length === 0) {
+      console.log("⚠ menuData 아직 로딩 안됨");
+      return;
+    }
 
-  // 🔥 menuData가 로딩되지 않았다면 모달 띄우기 중단
-  if (!menuData || Object.keys(menuData).length === 0) {
-    console.log("⚠ menuData 아직 로딩 안됨");
-    return;
-  }
+    // 🔥 음성으로 카테고리 변경
+    if (data.intent === "ChangeCategory" && data.slots?.category) {
+      const category = data.slots.category;
 
-  // 🔥 GPT가 BuildOrder + menu_name을 보냈으면 옵션 모달 자동 오픈
-// 🔥 GPT가 BuildOrder + menu_name을 보냈으면 옵션 모달 자동 오픈
-if (data.intent === "BuildOrder" && data.slots?.menu_name) {
-  const menuName = data.slots.menu_name;
+      // 프론트 카테고리 이름과 매핑
+      const mapping = {
+        "커피": "커피",
+        "티/에이드": "티/에이드",
+        "주스/라떼": "주스/라떼",
+        "쉐이크/스무디": "쉐이크/스무디",
+        "빙수/아이스크림": "빙수/아이스크림",
+        "빵/케이크": "빵/케이크",
+        "스낵": "스낵",
+      };
 
-  const foundMenu = Object.values(menuData)
-    .flat()
-    .find((m) => m.name === menuName);
+      const normalized = mapping[category];
 
-  if (foundMenu) {
-    setSelectedMenu(foundMenu);
-    setShowModal(true);
+      if (normalized && menuData[normalized]) {
+        setActiveCategory(normalized);
+        setAiText(`${normalized} 화면입니다.`);
 
-    fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
-      .then((res) => res.json())
-      .then((opt) => {
-        setAvailableSizes(opt.sizes || []);
-        setAvailableTemps(opt.temperatures || []);
-      });
-  }
-}
+        // 스크롤 맨 위로 이동
+        setTimeout(() => {
+          const scrollArea = document.querySelector('.menu-scroll-area');
+          if (scrollArea) scrollArea.scrollTop = 0;
+        }, 50);
+      }
 
-
-// ✅🔥 추가된 부분: 옵션 자동 선택 (OptionSelect intent 처리)
-if (data.intent === "OptionSelect") {
-  const { temperature, size } = data.slots;
-
-  if (!showModal && selectedMenu) {
-    setShowModal(true);
-  }
-
-  // 온도 자동 선택
-  if (temperature) {
-    setSelectedTemp(temperature);     // UI 버튼 자동 클릭됨
-  }
-
-  // 사이즈 자동 선택
-  if (size) {
-    setSelectedSize(size);            // UI 버튼 자동 클릭됨
-  }
-}
-if (data.intent === "AddToCart") {
-  // 기존 장바구니 담기 로직 실행
-  handleAddToCart();
-
-  // 옵션창 자동 닫기
-  setShowModal(false);
-
-  // 옵션 초기화
-  setSelectedTemp(null);
-  setSelectedSize(null);
-  setSelectedOption(null);
-}
+      return; // 더 이상 아래로 내려가지 않게
+    }
 
 
-  // 음성 재생
-  const audio = new Audio("http://localhost:5000/" + data.audio_url);
-  audio.play();
-};
+    // 🔥 GPT가 BuildOrder + menu_name을 보냈으면 옵션 모달 자동 오픈
+    // 🔥 GPT가 BuildOrder + menu_name을 보냈으면 옵션 모달 자동 오픈
+    if (data.intent === "BuildOrder" && data.slots?.menu_name) {
+      const menuName = data.slots.menu_name;
+
+      const foundMenu = Object.values(menuData)
+        .flat()
+        .find((m) => m.name === menuName);
+
+      if (foundMenu) {
+        setSelectedMenu(foundMenu);
+        setShowModal(true);
+
+        fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
+          .then((res) => res.json())
+          .then((opt) => {
+            setAvailableSizes(opt.sizes || []);
+            setAvailableTemps(opt.temperatures || []);
+
+            // 🔥 온도 옵션 자동 선택
+            if (opt.temperatures && opt.temperatures.length === 1) {
+              setSelectedTemp(opt.temperatures[0]);  // 자동 선택
+            } else {
+              // 음성으로 온도가 들어온 경우 적용
+              if (data.slots.temperature) {
+                const t = data.slots.temperature.toLowerCase();
+                if (t.includes("ice")) setSelectedTemp("Iced");
+                else if (t.includes("hot") || t.includes("뜨") || t.includes("핫"))
+                  setSelectedTemp("Hot");
+              }
+            }
+
+            // 🔥 사이즈도 자동 선택할지 (있으면)
+            if (opt.sizes && opt.sizes.length === 1) {
+              setSelectedSize(opt.sizes[0]);
+            }
+          });
+      }
+    }
+
+
+
+
+    if (data.intent === "OptionSelect") {
+      const { temperature, size } = data.slots;
+
+      // ⚠ 서버가 '제공되지 않아요'라고 말한 경우 → 선택 초기화
+      if (data.ai_text.includes("제공되지 않아요")) {
+        setSelectedTemp(null);
+        setSelectedSize(null);
+        return;
+      }
+
+      // 🔥 온도 정규화 후 적용
+      if (temperature) {
+        let normalizedTemp = null;
+        const t = temperature.toLowerCase();
+
+        if (t.includes("ice")) normalizedTemp = "Iced";
+        else if (t.includes("hot") || t.includes("뜨") || t.includes("핫")) normalizedTemp = "Hot";
+
+        if (normalizedTemp) {
+          setSelectedTemp(normalizedTemp);
+        }
+      }
+
+      // 🔥 사이즈 정규화 후 적용
+      if (size) {
+        let normalizedSize = null;
+        const s = size.toLowerCase();
+
+        if (s.includes("small") || s.includes("스몰")) normalizedSize = "Small";
+        else if (s.includes("large") || s.includes("라지")) normalizedSize = "Large";
+
+        if (normalizedSize) {
+          setSelectedSize(normalizedSize);
+        }
+      }
+    }
+
+
+    if (data.intent === "AddToCart") {
+      // 기존 장바구니 담기 로직 실행
+      handleAddToCart();
+
+      // 옵션창 자동 닫기
+      setShowModal(false);
+
+      // 옵션 초기화
+      setSelectedTemp(null);
+      setSelectedSize(null);
+      setSelectedOption(null);
+    }
+
+
+    // 음성 재생
+    const audio = new Audio("http://localhost:5000/" + data.audio_url);
+    audio.play();
+  };
 
 
 
@@ -136,38 +208,38 @@ if (data.intent === "AddToCart") {
 
   const [cartItems, setCartItems] = useState([]);
   const location = useLocation();
-  
-useEffect(() => {
-  let ignore = false;
 
-  if (!ignore) {
+  useEffect(() => {
+    let ignore = false;
+
+    if (!ignore) {
+      fetch("http://localhost:5000/speak/welcome")
+        .then(res => res.json())
+        .then(data => {
+          if (data.audio_url) {
+            new Audio("http://localhost:5000/" + data.audio_url).play();
+          }
+        });
+    }
+
+    return () => {
+      ignore = true;
+    };
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (sessionStorage.getItem("welcomePlayed") === "true") return;
+
     fetch("http://localhost:5000/speak/welcome")
       .then(res => res.json())
       .then(data => {
         if (data.audio_url) {
           new Audio("http://localhost:5000/" + data.audio_url).play();
         }
-      });
-  }
-
-  return () => {
-    ignore = true;
-  };
-}, [location.pathname]);
-
- useEffect(() => {
-  if (sessionStorage.getItem("welcomePlayed") === "true") return;
-
-  fetch("http://localhost:5000/speak/welcome")
-    .then(res => res.json())
-    .then(data => {
-      if (data.audio_url) {
-        new Audio("http://localhost:5000/" + data.audio_url).play();
-      }
-      sessionStorage.setItem("welcomePlayed", "true");
-    })
-    .catch(err => console.error("음성 재생 실패:", err));
-}, []);
+        sessionStorage.setItem("welcomePlayed", "true");
+      })
+      .catch(err => console.error("음성 재생 실패:", err));
+  }, []);
 
 
   // 눈 깜빡임 효과
@@ -249,11 +321,11 @@ useEffect(() => {
   }, [location.state]);
 
   useEffect(() => {
-  if (location.state?.forceTouch === true) {
-    setIsTouchMode(true);
-  }
-}, [location.state]);
-  
+    if (location.state?.forceTouch === true) {
+      setIsTouchMode(true);
+    }
+  }, [location.state]);
+
 
   const handleMenuClick = (item) => {
     if (!isTouchMode) {
@@ -264,26 +336,31 @@ useEffect(() => {
 
       // 메뉴별 선택 가능한 옵션만 표시
       fetch(`http://localhost:5000/api/menu/${item.name}/options`)
-  .then((res) => res.json())
-  .then((data) => {
-    setAvailableSizes(data.sizes || []);
-    setAvailableTemps(data.temperatures || []);
+        .then((res) => res.json())
+        .then((data) => {
+          setAvailableSizes(data.sizes || []);
+          setAvailableTemps(data.temperatures || []);
 
-    // 🔥 온도 옵션이 1개면 자동 선택 (빙수/아이스크림 ICE 자동 선택)
-    if (data.temperatures && data.temperatures.length === 1) {
-      setSelectedTemp(data.temperatures[0]);
-    } else {
-      setSelectedTemp(null);
-    }
+          // 온도 옵션이 1개이면 자동 선택
+          if (data.temperatures && data.temperatures.length === 1) {
+            if (!selectedTemp) { // 이미 음성으로 선택된 값이 있으면 유지
+              setSelectedTemp(data.temperatures[0]);
+            }
+          }
 
-    // 🔥 사이즈 옵션도 1개면 자동 선택 (필요하면)
-    if (data.sizes && data.sizes.length === 1) {
-      setSelectedSize(data.sizes[0]);
-    } else {
-      setSelectedSize(null);
-    }
-  })
-  .catch((err) => console.error("옵션 불러오기 실패:", err));
+          // 온도 옵션 여러 개일 때 초기화하지 않음!
+          // 음성 인식으로 들어온 값이 소중함
+          // setSelectedTemp(null)  ← 절대 하지 말기
+
+
+          // 🔥 사이즈 옵션도 1개면 자동 선택 (필요하면)
+          if (data.sizes && data.sizes.length === 1) {
+            setSelectedSize(data.sizes[0]);
+          } else {
+            setSelectedSize(null);
+          }
+        })
+        .catch((err) => console.error("옵션 불러오기 실패:", err));
 
     }
   };
@@ -296,45 +373,45 @@ useEffect(() => {
     setSelectedOption(null);
   };
 
-const handleAddToCart = () => {
-  const hasTempOption = availableTemps.length > 0;
-  const hasSizeOption = availableSizes.length > 0;
+  const handleAddToCart = () => {
+    const hasTempOption = availableTemps.length > 0;
+    const hasSizeOption = availableSizes.length > 0;
 
-  // 추가옵션이 필요한 카테고리인지 판단 (기존 UI 조건과 동일하게)
-  const needExtraOption = !['빙수 · 아이스크림', '베이커리', '스낵'].includes(activeCategory);
+    // 추가옵션이 필요한 카테고리인지 판단 (기존 UI 조건과 동일하게)
+    const needExtraOption = !['빙수 · 아이스크림', '베이커리', '스낵'].includes(activeCategory);
 
-  // 온도 옵션 필요인데 선택 안 했으면 경고
-  if (hasTempOption && !selectedTemp) {
-    setShowOptionWarning(true);
-    return;
-  }
+    // 온도 옵션 필요인데 선택 안 했으면 경고
+    if (hasTempOption && !selectedTemp) {
+      setShowOptionWarning(true);
+      return;
+    }
 
-  // 사이즈 옵션 필요인데 선택 안 했으면 경고
-  if (hasSizeOption && !selectedSize) {
-    setShowOptionWarning(true);
-    return;
-  }
+    // 사이즈 옵션 필요인데 선택 안 했으면 경고
+    if (hasSizeOption && !selectedSize) {
+      setShowOptionWarning(true);
+      return;
+    }
 
 
 
-  // 온도 옵션이 ICE 하나만 있을 경우 자동 선택
-  if (hasTempOption && availableTemps.length === 1 && !selectedTemp) {
-    setSelectedTemp(availableTemps[0]);
-  }
+    // 온도 옵션이 ICE 하나만 있을 경우 자동 선택
+    if (hasTempOption && availableTemps.length === 1 && !selectedTemp) {
+      setSelectedTemp(availableTemps[0]);
+    }
 
-  const newItem = {
-    name: selectedMenu.name,
-    price: selectedMenu.price,
-    temp: selectedTemp,
-    size: selectedSize,
-    option: selectedOption,
-    img: selectedMenu.img,
-    qty: 1
+    const newItem = {
+      name: selectedMenu.name,
+      price: selectedMenu.price,
+      temp: selectedTemp,
+      size: selectedSize,
+      option: selectedOption,
+      img: selectedMenu.img,
+      qty: 1
+    };
+
+    setCartItems(prev => [...prev, newItem]);
+    handleCloseModal();
   };
-
-  setCartItems(prev => [...prev, newItem]);
-  handleCloseModal();
-};
 
 
 
@@ -458,18 +535,18 @@ const handleAddToCart = () => {
 
 
             <div className="welcome-message">
-  {aiText}
-</div>
-            
-          <button 
-  className="voice-record-btn"
-  onClick={startRecording}
-  style={{ background: 'red', zIndex: 9999 }}
->
-  🎤 말하기
-</button>
+              {aiText}
+            </div>
 
-{renderFooterOptions(() => setShowVoiceSwitchModal(true))}
+            <button
+              className="voice-record-btn"
+              onClick={startRecording}
+              style={{ background: 'red', zIndex: 9999 }}
+            >
+              🎤 말하기
+            </button>
+
+            {renderFooterOptions(() => setShowVoiceSwitchModal(true))}
           </>
         ) : (
           <div className="touch-mode-footer">
@@ -531,24 +608,24 @@ const handleAddToCart = () => {
           </div>
         )}
       </footer>
-{showOptionWarning && (
-  <div className="modal-overlay option-warning-overlay">
+      {showOptionWarning && (
+        <div className="modal-overlay option-warning-overlay">
 
-    <div className="modal-box switch-modal">
-      <h3>옵션을 선택해주세요</h3>
-      <p>필수 옵션을 모두 선택해야 담을 수 있습니다.</p>
+          <div className="modal-box switch-modal">
+            <h3>옵션을 선택해주세요</h3>
+            <p>필수 옵션을 모두 선택해야 담을 수 있습니다.</p>
 
-      <div className="modal-buttons switch-buttons">
-        <button
-          onClick={() => setShowOptionWarning(false)}
-          className="switch-confirm"
-        >
-          확인
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            <div className="modal-buttons switch-buttons">
+              <button
+                onClick={() => setShowOptionWarning(false)}
+                className="switch-confirm"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 직원 호출 모달 */}
       {showStaffCallModal && !isStaffCalling && (

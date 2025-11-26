@@ -40,6 +40,36 @@ app.add_middleware(
 )
 
 
+def normalize_temperature(t):
+    if not t:
+        return None
+    t = t.lower()
+
+    # Hot 인식
+    if "hot" in t or "뜨" in t or "데" in t or "핫" in t:
+        return "Hot"
+
+    # Iced 인식
+    if "ice" in t or "차" in t or "아이스" in t:
+        return "Iced"
+
+    return None
+
+
+def normalize_size(s):
+    if not s:
+        return None
+    s = s.lower()
+
+    if "small" in s or "스몰" in s or "작" in s:
+        return "Small"
+
+    if "large" in s or "라지" in s or "큰" in s:
+        return "Large"
+
+    return None
+
+
 # -----------------------------
 # 텍스트 모드 테스트
 # -----------------------------
@@ -163,49 +193,232 @@ cart = []
 def process_intent(intent, slots):
     global cart
 
+     # --------------------
+    # 0) MenuQuery
+    # --------------------
+    if intent == "MenuQuery":
+        return "안녕하세요! 주문 도와드릴게요."
+    
+        # --------------------
+    # ChangeCategory (🔥 신규 추가)
+    # --------------------
+    if intent == "ChangeCategory":
+        category = slots.get("category")
+
+        if not category:
+            return "어떤 화면을 보여드릴까요? 커피, 티/에이드, 빙수 같은 카테고리를 말씀해주세요."
+
+        # 프론트 카테고리 이름과 매핑
+        mapping = {
+            "커피": "커피",
+            "coffee": "커피",
+            "티": "티/에이드",
+            "에이드": "티/에이드",
+            "티/에이드": "티/에이드",
+            "티 에이드": "티/에이드",
+            "주스": "주스/라떼",
+            "라떼": "주스/라떼",
+            "주스라떼": "주스/라떼",
+            "쉐이크": "쉐이크/스무디",
+            "스무디": "쉐이크/스무디",
+            "빙수": "빙수/아이스크림",
+            "아이스크림": "빙수/아이스크림",
+            "빙수/아이스크림": "빙수/아이스크림",
+            "빵": "빵/케이크",
+            "케이크": "빵/케이크",
+            "스낵": "스낵",
+        }
+
+        normalized = mapping.get(category.lower())
+
+        if not normalized:
+            return f"{category} 카테고리를 찾지 못했어요."
+
+        # React로 전달할 상태 저장
+        state["target_category"] = normalized
+
+        return f"{normalized} 화면으로 이동할게요."
+
+    
     # --------------------
     # 1) BuildOrder
     # --------------------
     if intent == "BuildOrder":
         name = slots.get("menu_name")
         qty = slots.get("quantity", 1)
+        temp = normalize_temperature(slots.get("temperature"))
+        size = normalize_size(slots.get("size"))
+
 
         menu = db_get_menu(name)
         if not menu:
             return f"{name}는 없는 메뉴예요."
 
-        state["last_menu"] = name
-        state["pending"] = {"name": name, "qty": qty}
+    # 실제 존재하는 옵션 목록
+        valid_temps = [normalize_temperature(t) for t in menu["temperatures"]]
+        valid_sizes = [normalize_size(s) for s in menu["sizes"]]
+        
+        if temp and temp not in valid_temps:
+            temp = None
 
-        return "원하시는 온도와 사이즈를 말씀해주세요."
-
-    # --------------------
-    # 2) OptionSelect
-    # --------------------
-    if intent == "OptionSelect":
-        temp = slots.get("temperature")
-        size = slots.get("size")
-
-        if not state.get("last_menu"):
-            return "어떤 음료에 옵션을 적용할까요?"
-
-        pending = state["pending"]
-
+        if size and size not in valid_sizes:
+            size = None
+    # 🔥 pending 저장
+        pending = {"name": name, "qty": qty}
         if temp:
             pending["temperature"] = temp
         if size:
             pending["size"] = size
 
+        state["last_menu"] = name
+        state["pending"] = pending
+
+    # 🔥 3) 존재 가능한 옵션 기반 응답 로직
+    #   temp + size 둘 다 완성됨
+        if temp and size:
+            return "선택이 완료되었어요. 담을까요?"
+
+    #   온도 필요하고 temp 없음
+        if len(valid_temps) > 1 and not temp:
+            return "원하시는 온도를 말씀해주세요."
+
+    #   사이즈 필요하고 size 없음
+        if len(valid_sizes) > 1 and not size:
+            return "사이즈를 말씀해주세요."
+
+    #   온도는 하나뿐이고 자동 결정 (예: Hot만 존재)
+        if len(valid_temps) == 1 and not temp:
+            pending["temperature"] = valid_temps[0]
+            
+            if len(valid_sizes) <= 1:
+                if len(valid_sizes) == 1:
+                    pending["size"] = valid_sizes[0]
+                return "선택지가 하나뿐이라 자동으로 선택됐어요. 담을까요?"
+            return "온도는 자동으로 선택됐어요. 사이즈를 말씀해주세요."
+
+
+    #   사이즈도 하나만 존재할 때
+        if len(valid_sizes) == 1 and not size:
+            pending["size"] = valid_sizes[0]
+            if "temperature" in pending:
+                return "선택지가 하나뿐이라 자동으로 선택됐어요. 담을까요?"
+            return "사이즈는 자동으로 선택됐어요. 온도를 말씀해주세요."
+
+    # --------------------
+    # 2) OptionSelect
+    # --------------------
+    if intent == "OptionSelect":
+        temp = normalize_temperature(slots.get("temperature"))
+        size = normalize_size(slots.get("size"))
+
+
+        if not state.get("last_menu"):
+            return "어떤 음료에 옵션을 적용할까요?"
+
+        pending = state["pending"]
+        name = pending["name"]
+
+    # 🔥 실제 메뉴 옵션 불러오기
+        menu = db_get_menu(name)
+        valid_temps = [normalize_temperature(t) for t in menu["temperatures"]]  # 예: ['Hot']
+        valid_sizes = [normalize_size(s) for s in menu["sizes"]]           # 예: ['Small','Large'] 또는 ['Hot']
+
+# 🔥 온도 검증
+        if temp:
+            if temp not in valid_temps:
+                return f"{name}는 {temp}로 제공되지 않아요. 가능한 온도는 {', '.join(valid_temps)} 입니다."
+            pending["temperature"] = temp
+
+# 🔥 사이즈 검증
+        if size:
+            if size not in valid_sizes:
+                return f"{name}는 {size} 사이즈가 없어요. 가능한 사이즈는 {', '.join(valid_sizes)} 입니다."
+            pending["size"] = size
+
         has_temp = "temperature" in pending
         has_size = "size" in pending
 
+        if has_temp and has_size:
+            return "선택이 완료되었어요. 담을까요?"
+
         if has_temp and not has_size:
             return f"{pending['temperature']} 선택되었어요. 사이즈도 말씀해주세요."
+
         if has_size and not has_temp:
             return f"{pending['size']} 선택되었어요. 온도도 말씀해주세요."
 
-        if has_temp and has_size:
-            return "선택이 완료되었어요. 담을까요?"
+        return "원하시는 옵션을 말씀해주세요."
+
+    # --------------------
+# NutritionQuery
+# --------------------
+    if intent == "NutritionQuery":
+        name = slots.get("menu_name")
+        nutrient = slots.get("nutrient")
+
+        menu = db_get_menu(name)
+        if not menu:
+            return f"{name}는 없는 메뉴예요."
+
+    # DB 상세 정보 가져오기
+        detail = db_get_menu_detail(name)
+        if not detail:
+            return f"{name}의 상세 정보를 찾을 수 없어요."
+
+        value = detail.get(nutrient)
+        if value is None:
+            return f"{name}의 {nutrient} 정보를 찾을 수 없어요."
+
+    # 사람말로 바꾸기
+        readable = {
+            "calories_kcal": "칼로리는",
+            "sugar_g": "당류는",
+            "sodium_mg": "나트륨은",
+            "caffeine_mg": "카페인은",
+            "protein_g": "단백질은",
+        }.get(nutrient, "해당 값은")
+
+        return f"{name}의 {readable} {value} 입니다."
+    
+    
+    # --------------------
+# NutritionRanking
+# --------------------
+    if intent == "NutritionRanking":
+        nutrient = slots.get("nutrient")
+        compare = slots.get("compare")  # "max" 또는 "min"
+
+        if not nutrient or not compare:
+            return "어떤 영양소를 비교할지 알려주세요."
+
+        items = db_get_all_menu_details()
+        if not items:
+            return "메뉴 정보를 불러올 수 없어요."
+
+        values = [item[nutrient] for item in items if item[nutrient] is not None]
+        if not values:
+            return "해당 영양소 정보가 있는 메뉴가 없어요."
+        target_value = max(values) if compare == "max" else min(values)
+        
+        
+
+    # 해당 값을 가진 모든 메뉴 찾기
+        matched = [item["name"] for item in items if item[nutrient] == target_value]
+
+        readable = {
+            "calories_kcal": "칼로리",
+            "sugar_g": "당류",
+            "protein_g": "단백질",
+            "caffeine_mg": "카페인",
+            "sodium_mg": "나트륨",
+        }.get(nutrient, "해당 영양소")
+
+        if len(matched) == 1:
+            return f"{readable}가 가장 { '높은' if compare=='max' else '낮은' } 메뉴는 {matched[0]}이며 {target_value} 입니다."
+
+        menu_list = ", ".join(matched)
+        return f"{readable}가 가장 { '높은' if compare=='max' else '낮은' } 메뉴는 {menu_list}이며 모두 {target_value} 입니다."
+
 
     # --------------------
     # 3) AddToCart (🔥 신규 추가)
@@ -301,6 +514,77 @@ def db_get_menu(name):
         "temperatures": list(temperatures),
         "sizes": list(sizes),
     }
+
+def db_get_menu_detail(name):
+    import os
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, "kiosk.db")
+
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT 
+            calories_kcal,
+            sugar_g,
+            protein_g,
+            caffeine_mg,
+            sodium_mg
+        FROM Product
+        JOIN MenuItem ON Product.menu_id = MenuItem.menu_id
+        WHERE MenuItem.name = ?
+        LIMIT 1
+    """, (name,))
+
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    return {
+        "calories_kcal": row[0],
+        "sugar_g": row[1],
+        "protein_g": row[2],
+        "caffeine_mg": row[3],
+        "sodium_mg": row[4],
+    }
+
+def db_get_all_menu_details():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, "kiosk.db")
+
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT 
+            MenuItem.name,
+            calories_kcal,
+            sugar_g,
+            protein_g,
+            caffeine_mg,
+            sodium_mg
+        FROM Product
+        JOIN MenuItem ON Product.menu_id = MenuItem.menu_id
+        GROUP BY MenuItem.name
+    """)
+
+    rows = cur.fetchall()
+    conn.close()
+
+    items = []
+    for r in rows:
+        items.append({
+            "name": r[0],
+            "calories_kcal": r[1],
+            "sugar_g": r[2],
+            "protein_g": r[3],
+            "caffeine_mg": r[4],
+            "sodium_mg": r[5]
+        })
+
+    return items
 
 
 # -----------------------------
