@@ -31,6 +31,20 @@ function MenuCoffee() {
     setTimeout(() => recorder.stop(), 6000);
   };
 
+  // 1️⃣ sendVoice 밖
+  const requestSmartRecommend = async (nutrient, compare) => {
+    const res = await fetch(`http://localhost:5000/recommend?nutrient=${nutrient}&compare=${compare}`);
+    const data = await res.json();
+
+    setSmartRecommendData(data.recommend || []);
+    setAiText(data.ai_text || "추천 결과입니다.");
+
+    setTimeout(() => {
+      const scrollArea = document.querySelector(".menu-scroll-area");
+      if (scrollArea) scrollArea.scrollTop = 0;
+    }, 50);
+  };
+
   const sendVoice = async (blob) => {
     const formData = new FormData();
     formData.append("file", blob, "audio.webm");
@@ -39,6 +53,8 @@ function MenuCoffee() {
       method: "POST",
       body: formData,
     });
+
+
 
     const data = await res.json();
 
@@ -80,6 +96,24 @@ function MenuCoffee() {
 
       return; // 더 이상 아래로 내려가지 않게
     }
+
+    // 🔥 SmartRecommend 처리 (추천 자동 이동)
+    if (data.intent === "SmartRecommend" && data.recommend) {
+      setActiveCategory("스마트추천");
+      setSmartRecommendData(data.recommend);
+
+      // ⭐ 음성 안내문 갱신
+      setAiText(data.ai_text);
+
+      setTimeout(() => {
+        const scrollArea = document.querySelector(".menu-scroll-area");
+        if (scrollArea) scrollArea.scrollTop = 0;
+      }, 50);
+
+      return;
+    }
+
+
 
 
     // 🔥 GPT가 BuildOrder + menu_name을 보냈으면 옵션 모달 자동 오픈
@@ -246,6 +280,7 @@ function MenuCoffee() {
 
   const [cartItems, setCartItems] = useState([]);
   const location = useLocation();
+  const [smartRecommendData, setSmartRecommendData] = useState([]);
 
   useEffect(() => {
     let ignore = false;
@@ -517,13 +552,13 @@ function MenuCoffee() {
       <aside className="menu-sidebar">
         <h2 className="logo">MOMENT COFFEE</h2>
         <ul>
+          {/* 기존 카테고리 자동 출력 */}
           {Object.keys(menuData).map((category) => (
             <li
               key={category}
               className={activeCategory === category ? 'active' : ''}
               onClick={() => {
                 setActiveCategory(category);
-                // 스크롤 영역 맨 위로 이동
                 const scrollArea = document.querySelector('.menu-scroll-area');
                 if (scrollArea) {
                   scrollArea.scrollTop = 0;
@@ -532,31 +567,115 @@ function MenuCoffee() {
             >
               {category}
             </li>
-
           ))}
+
+          {/* ⭐ 스마트추천 메뉴 강제로 추가 */}
+          <li
+            key="스마트추천"
+            className={activeCategory === "스마트추천" ? "active" : ""}
+            onClick={() => {
+              setActiveCategory("스마트추천");
+              setSmartRecommendData([]);   // ⭐ 추천 목록 초기화
+
+              const scrollArea = document.querySelector(".menu-scroll-area");
+              if (scrollArea) scrollArea.scrollTop = 0;
+            }}
+          >
+            스마트추천
+          </li>
         </ul>
       </aside>
+
 
       <main className="menu-content">
         <div className="menu-fixed-bar">{activeCategory}</div>
 
         <div className="menu-scroll-area">
           <div className="menu-grid">
-            {menuData[activeCategory]?.length > 0 ? (
-              menuData[activeCategory].map((item, i) => (
-                <div className="menu-item" key={i} onClick={() => handleMenuClick(item)}>
-                  <img src={item.img} alt={item.name} />
-                  <p>
-                    {item.name}
-                    <br />
-                    <strong>{item.price.toLocaleString()}원</strong>
-                  </p>
+            {/* 스마트추천 화면일 때 */}
+            {/* 스마트추천 화면일 때 */}
+            {/* 스마트추천 화면일 때 */}
+            {activeCategory === "스마트추천" ? (
+              <div style={{ width: "105%" }}>
+
+                {/* 🔥 스마트추천 버튼 — menu-grid 밖으로 꺼냄 */}
+                <div
+                  className="smart-filter-area"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gap: "12px",
+                    marginBottom: "25px",
+                    maxWidth: "900px",
+                    marginLeft: "auto",
+                    marginRight: "auto",
+                    textAlign: "center",
+                  }}
+                >
+                  {/* 기존 5개 */}
+                  <button className="smart-btn" onClick={() => requestSmartRecommend("calories_kcal", "min")}>칼로리 낮은 순</button>
+                  <button className="smart-btn" onClick={() => requestSmartRecommend("sugar_g", "min")}>당류 낮은 순</button>
+                  <button className="smart-btn" onClick={() => requestSmartRecommend("caffeine_mg", "min")}>카페인 낮은 순</button>
+                  <button className="smart-btn" onClick={() => requestSmartRecommend("sodium_mg", "min")}>나트륨 낮은 순</button>
+                  <button className="smart-btn" onClick={() => requestSmartRecommend("protein_g", "max")}>단백질 많은 순</button>
+
+                  {/* 높은 순 */}
+                  <button className="smart-btn" onClick={() => requestSmartRecommend("calories_kcal", "max")}>칼로리 높은 순</button>
+                  <button className="smart-btn" onClick={() => requestSmartRecommend("sugar_g", "max")}>당류 높은 순</button>
+                  <button className="smart-btn" onClick={() => requestSmartRecommend("caffeine_mg", "max")}>카페인 높은 순</button>
+                  <button className="smart-btn" onClick={() => requestSmartRecommend("sodium_mg", "max")}>나트륨 높은 순</button>
+
+                  {/* 반대 기준 */}
+                  <button className="smart-btn" onClick={() => requestSmartRecommend("protein_g", "min")}>단백질 적은 순</button>
+
+                  {/* 가격 */}
+                  <button className="smart-btn" onClick={() => requestSmartRecommend("price", "min")}>가격 낮은 순</button>
+                  <button className="smart-btn" onClick={() => requestSmartRecommend("price", "max")}>가격 높은 순</button>
+
+                  {/* 랜덤 */}
+                  <button className="smart-btn" onClick={() => requestSmartRecommend("random", "any")}>랜덤 추천</button>
                 </div>
-              ))
+
+                {/* 🔥 추천 결과 출력 — menu-grid 안쪽 */}
+                {smartRecommendData.length === 0 ? (
+                  <p style={{ opacity: 0.7, textAlign: "center" }}>추천 기준을 선택하면 메뉴가 표시됩니다.</p>
+                ) : (
+                  <div className="menu-grid">
+                    {smartRecommendData.map((item, i) => (
+                      <div className="menu-item" key={i} onClick={() => handleMenuClick(item)}>
+                        <img src={item.img} alt={item.name} />
+                        <p>
+                          {item.name}
+                          <br />
+                          <strong>{item.price.toLocaleString()}원</strong>
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
             ) : (
-              <p>메뉴가 없습니다.</p>
+              /* 기존 카테고리 메뉴 출력 */
+              menuData[activeCategory]?.length > 0 ? (
+                menuData[activeCategory].map((item, i) => (
+                  <div className="menu-item" key={i} onClick={() => handleMenuClick(item)}>
+                    <img src={item.img} alt={item.name} />
+                    <p>
+                      {item.name}
+                      <br />
+                      <strong>{item.price.toLocaleString()}원</strong>
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p>메뉴가 없습니다.</p>
+              )
             )}
+
+
           </div>
+
         </div>
       </main>
 

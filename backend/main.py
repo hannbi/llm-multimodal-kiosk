@@ -120,6 +120,119 @@ async def upload_image(file: UploadFile = File(...)):
 
     return {"image_url": image_url}
 
+@app.get("/recommend")
+def recommend(nutrient: str, compare: str):
+    items = db_get_all_menu_details()
+    if not items:
+        return {"ai_text": "메뉴 정보를 불러올 수 없어요.", "recommend": []}
+
+    # --- 랜덤 추천 ---
+    if nutrient == "random":
+        import random
+        random_items = random.sample(items, min(5, len(items)))
+
+        # DB 연결
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, "kiosk.db")
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+
+        results = []
+        for m in random_items:
+            cur.execute("""
+                SELECT Product.price, MenuItem.image_url
+                FROM Product
+                JOIN MenuItem ON Product.menu_id = MenuItem.menu_id
+                WHERE MenuItem.name = ?
+                LIMIT 1
+            """, (m["name"],))
+            row = cur.fetchone()
+
+            results.append({
+                "name": m["name"],
+                "calories_kcal": m["calories_kcal"],
+                "sugar_g": m["sugar_g"],
+                "protein_g": m["protein_g"],
+                "caffeine_mg": m["caffeine_mg"],
+                "sodium_mg": m["sodium_mg"],
+                "price": row[0] if row else 0,
+                "img": row[1] if row else ""
+            })
+
+        conn.close()
+        return {
+            "ai_text": "랜덤으로 메뉴 5개를 추천해드릴게요!",
+            "recommend": results
+        }
+
+    # --- 가격 필터 ---
+    if nutrient == "price":
+        # Product 테이블에서 가격 + 기본 정보 가져오도록 확장 필요
+        enriched = db_get_all_menu_with_price()
+
+        reverse_sort = (compare == "max")
+        sorted_items = sorted(enriched, key=lambda x: x["price"], reverse=reverse_sort)
+        top_items = sorted_items[:5]
+
+        return {
+            "ai_text": f"가격이 {'높은' if compare=='max' else '낮은'} 메뉴 TOP 5를 추천해드릴게요.",
+            "recommend": top_items
+        }
+
+    # --- 일반 영양소 필터 ---
+    valid_items = [item for item in items if item[nutrient] is not None]
+
+    reverse_sort = (compare == "max")
+    sorted_items = sorted(valid_items, key=lambda x: x[nutrient], reverse=reverse_sort)
+
+    # TOP 5
+    top_items = sorted_items[:5]
+
+    # DB 연결
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, "kiosk.db")
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+
+    results = []
+    for m in top_items:
+        cur.execute("""
+            SELECT Product.price, MenuItem.image_url
+            FROM Product
+            JOIN MenuItem ON Product.menu_id = MenuItem.menu_id
+            WHERE MenuItem.name = ?
+            LIMIT 1
+        """, (m["name"],))
+        row = cur.fetchone()
+
+        results.append({
+            "name": m["name"],
+            "calories_kcal": m["calories_kcal"],
+            "sugar_g": m["sugar_g"],
+            "protein_g": m["protein_g"],
+            "caffeine_mg": m["caffeine_mg"],
+            "sodium_mg": m["sodium_mg"],
+            "price": row[0] if row else 0,
+            "img": row[1] if row else ""
+        })
+
+    conn.close()
+
+    readable = {
+        "calories_kcal": "칼로리",
+        "sugar_g": "당류",
+        "protein_g": "단백질",
+        "caffeine_mg": "카페인",
+        "sodium_mg": "나트륨",
+    }.get(nutrient, "영양소")
+
+    direction = "낮은" if compare == "min" else "높은"
+    ai_msg = f"{readable}가 {direction} 메뉴 TOP 5를 추천해드릴게요."
+
+    return {
+        "ai_text": ai_msg,
+        "recommend": results
+    }
 
 # -----------------------------
 # 음성 처리 엔드포인트
@@ -145,15 +258,17 @@ async def process_voice(file: UploadFile = File(...)):
 
     # 4) TTS 생성
     output_path = f"uploads/{uuid.uuid4()}.mp3"
-    speak(answer, output_path)
+    tts_text = answer["message"] if isinstance(answer, dict) else answer
+    speak(tts_text, output_path)
 
     next_action = "go_payment" if intent == "Payment" else None
 
     return {
         "user_text": text,
-        "ai_text": answer,
+        "ai_text": answer["message"] if isinstance(answer, dict) else answer,
         "intent": intent,
         "slots": slots,
+        "recommend": answer["recommend"] if isinstance(answer, dict) else None,
         "audio_url": output_path,
         "next_action": next_action
     }
@@ -239,6 +354,7 @@ def process_intent(intent, slots):
 
         return f"{normalized} 화면으로 이동할게요."
 
+    
     
     # --------------------
     # 1) BuildOrder
@@ -428,9 +544,69 @@ def process_intent(intent, slots):
 
         menu_list = ", ".join(matched)
         return f"{readable}가 가장 { '높은' if compare=='max' else '낮은' } 메뉴는 {menu_list}이며 모두 {target_value} 입니다."
+# --------------------
+# SmartRecommend (완성본 TOP5 + 가격 + 랜덤 지원)
+# --------------------
+    if intent == "SmartRecommend":
+        nutrient = slots.get("nutrient")
+        compare = slots.get("compare")
 
+        if not nutrient:
+            nutrient = "random"
+            compare = "any"
 
-    # --------------------
+    # 1) 랜덤 추천
+        if nutrient == "random":
+            import random
+            items = db_get_all_menu_with_price()
+            random.shuffle(items)
+            results = items[:5]
+
+            return {
+                "message": "아무거나 5개 랜덤으로 추천해드릴게요!",
+                "recommend": results
+            }
+
+    # 2) 가격 추천
+        if nutrient == "price":
+            items = db_get_all_menu_with_price()
+            reverse_sort = (compare == "max")
+            sorted_items = sorted(items, key=lambda x: x["price"], reverse=reverse_sort)
+            results = sorted_items[:5]
+
+            msg = "가격이 가장 높은 메뉴 TOP5입니다." if compare == "max" \
+                else "가격이 가장 낮은 메뉴 TOP5입니다."
+
+            return {
+                "message": msg,
+                "recommend": results
+            }
+
+    # 3) 영양소 기반 추천 (칼로리/당류/단백질/카페인/나트륨)
+        items = db_get_all_menu_with_price()
+        valid_items = [item for item in items if item.get(nutrient) is not None]
+
+        reverse_sort = (compare == "max")
+        sorted_items = sorted(valid_items, key=lambda x: x[nutrient], reverse=reverse_sort)
+
+        results = sorted_items[:5]
+
+        readable = {
+            "calories_kcal": "칼로리",
+            "sugar_g": "당류",
+            "protein_g": "단백질",
+            "caffeine_mg": "카페인",
+            "sodium_mg": "나트륨",
+        }.get(nutrient, "영양소")
+
+        msg = f"{readable}가 {'높은' if compare=='max' else '낮은'} 메뉴 TOP5입니다."
+
+        return {
+            "message": msg,
+            "recommend": results
+        }
+    
+ # --------------------
     # 3) AddToCart (🔥 신규 추가)
     # --------------------
     if intent == "AddToCart":
@@ -595,6 +771,46 @@ def db_get_all_menu_details():
         })
 
     return items
+
+def db_get_all_menu_with_price():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, "kiosk.db")
+
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT 
+            MenuItem.name,
+            Product.price,
+            MenuItem.image_url,
+            calories_kcal,
+            sugar_g,
+            protein_g,
+            caffeine_mg,
+            sodium_mg
+        FROM Product
+        JOIN MenuItem ON Product.menu_id = MenuItem.menu_id
+        GROUP BY MenuItem.name
+    """)
+
+    rows = cur.fetchall()
+    conn.close()
+
+    results = []
+    for r in rows:
+        results.append({
+            "name": r[0],
+            "price": r[1],
+            "img": r[2],
+            "calories_kcal": r[3],
+            "sugar_g": r[4],
+            "protein_g": r[5],
+            "caffeine_mg": r[6],
+            "sodium_mg": r[7],
+        })
+
+    return results
 
 
 # -----------------------------

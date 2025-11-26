@@ -693,3 +693,38 @@
 .cart-option {
   display: none;
 }
+/* 스마트추천 버튼 공통 스타일 */
+.smart-btn {
+  background: #2c2c3d;              /* 기존 상단바/포인트 컬러와 통일 */
+  color: white;
+  border: none;
+  padding: 14px 22px;
+  border-radius: 10px;              /* 전체 UI 라운드 분위기와 맞춤 */
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  white-space: nowrap;              /* 텍스트 줄바꿈 방지 */
+}
+
+/* hover 효과 */
+.smart-btn:hover {
+  background: #444459;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+}
+
+/* 클릭 효과 */
+.smart-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+/* 스마트추천 버튼들이 포함된 컨테이너 스타일 */
+.smart-btn-container {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}

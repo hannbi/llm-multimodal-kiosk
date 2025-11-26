@@ -28,6 +28,8 @@ def get_gpt_response(user_text: str):
 - AddToCart
 - Fallback
 - ChangeCategory
+- SmartRecommend
+
 
 규칙:
 - response 필드는 반드시 채워야 한다.
@@ -211,6 +213,44 @@ slots:
 자동 교정 규칙 적용:
 사용자가 "빙수", "빙수 아이스크림", "빙수/아이스크림", "얼음 메뉴"라고 말해도
 slots.category 는 "빙수/아이스크림" 으로 설정한다.
+
+# 🔥 SmartRecommend 추천 규칙 (영양 기반 추천 기능)
+
+아래 표현이 문장에 포함되면 SmartRecommend 로 분류한다:
+
+"칼로리 낮은", "칼로리 제일 낮은", "칼로리 가장 낮은",
+"당류 낮은", "당류 적은", "당류 제일 적은", "당류 가장 적은",
+"카페인 낮은", "카페인 적은", "카페인 제일 적은",
+"나트륨 낮은", "나트륨 적은", "나트륨 가장 적은",
+"칼로리 높은", "칼로리 제일 높은",
+"카페인 높은", "카페인 많은", "카페인 가장 많은",
+"당류 높은", "단백질 많은", "나트륨 높은",
+"가격 낮은", "가격 싼", "저렴한", 
+"가격 높은", "비싼",
+"랜덤 추천", "아무거나 추천", "아무거나", "뭐가 좋을까"
+
+
+SmartRecommend 규칙:
+
+- intent = "SmartRecommend"
+- slots:
+    nutrient: "calories_kcal" / "sugar_g" / "protein_g" / "caffeine_mg" / "sodium_mg"
+    compare: "min" 또는 "max"
+
+예시:
+
+"칼로리 낮은 음료 추천해줘"
+→ nutrient="calories_kcal", compare="min"
+
+"카페인 가장 많은 메뉴 뭐 있어?"
+→ nutrient="caffeine_mg", compare="max"
+
+"당류 적은 음료 알려줘"
+→ nutrient="sugar_g", compare="min"
+
+response:
+- 반드시 한 문장으로 자연스럽게 만들기
+예) "칼로리가 가장 낮은 메뉴를 추천해드릴게요."
 
 
 # 🔥 AddToCart 관련 규칙
