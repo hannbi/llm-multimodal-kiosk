@@ -162,6 +162,44 @@ function MenuCoffee() {
       }
     }
 
+    // 🔥 영양 정보 질의 → 옵션창 자동 열기 + 상세정보 자동 펼치기
+    if (data.intent === "NutritionQuery" && data.slots?.menu_name) {
+      const menuName = data.slots.menu_name;
+
+      const foundMenu = Object.values(menuData)
+        .flat()
+        .find((m) => m.name === menuName);
+
+      if (foundMenu) {
+        setSelectedMenu(foundMenu);
+        setShowModal(true);
+        setShowDetail(true); // 상세정보 자동 펼치기
+
+        // 🔥 옵션 초기화 (아주 중요)
+        setSelectedTemp(null);
+        setSelectedSize(null);
+        setSelectedOption(null);
+
+        // 옵션 데이터 불러오기
+        fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
+          .then((res) => res.json())
+          .then((opt) => {
+            setAvailableSizes(opt.sizes || []);
+            setAvailableTemps(opt.temperatures || []);
+
+            // 온도 옵션이 1개면 자동 선택
+            if (opt.temperatures?.length === 1) {
+              setSelectedTemp(opt.temperatures[0]);
+            }
+
+            // 사이즈 옵션이 1개면 자동 선택
+            if (opt.sizes?.length === 1) {
+              setSelectedSize(opt.sizes[0]);
+            }
+          });
+      }
+    }
+
 
     if (data.intent === "AddToCart") {
       // 기존 장바구니 담기 로직 실행

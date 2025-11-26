@@ -145,6 +145,44 @@ slots:
   (calories_kcal, sugar_g, protein_g, caffeine_mg, sodium_mg 중 하나)
 - compare: "max" 또는 "min"
 
+/// 🔥 상세정보 요청 규칙 (NutritionQuery 확장)
+
+/// 🔥 상세정보 요청 규칙 (NutritionQuery 강제 적용)
+
+아래 표현이 문장에 포함되면 무조건 NutritionQuery 로 분류한다:
+- "상세정보"
+- "자세한 정보"
+- "상세 정보"
+- "정보 보여줘"
+- "정보 보여주세요"
+- "정보 알려줘"
+- "정보 알려주세요"
+- "영양정보"
+- "영양 정보"
+- "nutrition"
+- "정보 좀"
+- "설명해줘"
+- "보여주세요"
+
+이 표현들이 포함되고,
+메뉴 이름이 함께 등장하면:
+
+→ intent = "NutritionQuery"
+→ slots.menu_name = 교정된 메뉴 이름
+→ slots.nutrient = null   // 전체 정보 요청
+→ response = "아메리카노의 상세정보입니다." 같은 한 문장 생성
+
+예시:
+"아메리카노 상세정보 보여줘"
+"라떼 영양정보 알려줘"
+"이 메뉴 자세한 정보 좀"
+
+→ intent = "NutritionQuery"
+→ slots.menu_name = 정확한 메뉴 이름
+→ slots.nutrient = null (전체 정보 요청)
+→ response = "아메리카노의 상세정보입니다." 처럼 한 문장 생성
+
+
 /// 🔥 ChangeCategory 규칙
 
 사용자가 메뉴 카테고리 화면을 보여달라고 요청하면 intent="ChangeCategory" 로 분류한다.

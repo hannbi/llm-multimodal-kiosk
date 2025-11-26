@@ -364,6 +364,16 @@ def process_intent(intent, slots):
         detail = db_get_menu_detail(name)
         if not detail:
             return f"{name}의 상세 정보를 찾을 수 없어요."
+        
+        if nutrient is None:
+            return (
+                f"{name}의 상세정보입니다. "
+                f"칼로리는 {detail['calories_kcal']} kcal, "
+                f"당류는 {detail['sugar_g']} g, "
+                f"단백질은 {detail['protein_g']} g, "
+                f"카페인은 {detail['caffeine_mg']} mg, "
+                f"나트륨은 {detail['sodium_mg']} mg 입니다."
+        )
 
         value = detail.get(nutrient)
         if value is None:
