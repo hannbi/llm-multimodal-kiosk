@@ -31,7 +31,34 @@ function MenuCoffee() {
     setTimeout(() => recorder.stop(), 6000);
   };
 
-  // 1️⃣ sendVoice 밖
+ 
+  const [showOptionWarning, setShowOptionWarning] = useState(false);
+
+  const [showModal, setShowModal] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
+  const [isTouchMode, setIsTouchMode] = useState(false);
+  const [showVoiceSwitchModal, setShowVoiceSwitchModal] = useState(false);
+  const [selectedTemp, setSelectedTemp] = useState(null);
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
+  const [isTalking, setIsTalking] = useState(false);
+  const [aiText, setAiText] = useState("어서오세요! 음성으로 주문해주세요.");  // ① 추가
+  const [isBlinking, setIsBlinking] = useState(false);
+  const [showStaffCallModal, setShowStaffCallModal] = useState(false);
+  const [isStaffCalling, setIsStaffCalling] = useState(false);
+
+  const [menuData, setMenuData] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [selectedMenu, setSelectedMenu] = useState(null);
+  const [availableSizes, setAvailableSizes] = useState([]);
+  const [availableTemps, setAvailableTemps] = useState([]);
+
+  const [cartItems, setCartItems] = useState([]);
+  const location = useLocation();
+  const [smartRecommendData, setSmartRecommendData] = useState([]);
+
+ // 1️⃣ sendVoice 밖
   const requestSmartRecommend = async (nutrient, compare) => {
     const res = await fetch(`http://localhost:5000/recommend?nutrient=${nutrient}&compare=${compare}`);
     const data = await res.json();
@@ -44,6 +71,7 @@ function MenuCoffee() {
       if (scrollArea) scrollArea.scrollTop = 0;
     }, 50);
   };
+
 
   const sendVoice = async (blob) => {
     const formData = new FormData();
@@ -112,7 +140,6 @@ function MenuCoffee() {
 
       return;
     }
-
 
 
 
@@ -248,6 +275,19 @@ function MenuCoffee() {
       setSelectedOption(null);
     }
 
+    // 🔥 [추가] 결제 의도(Payment) 들어오면 order_voice로 이동
+    if (data.intent === "Payment" || data.next_action === "go_payment") {
+      // 장바구니 총 금액 다시 계산
+      const totalPrice = cartItems.reduce(
+        (sum, item) => sum + item.price * item.qty,
+        0
+      );
+
+      // 👉 order_voice 페이지로 이동 + 장바구니/금액 전달
+      navigate("/order_voice", {
+        state: { cartItems, totalPrice },
+      });
+    }
 
     // 음성 재생
     const audio = new Audio("http://localhost:5000/" + data.audio_url);
@@ -256,31 +296,7 @@ function MenuCoffee() {
 
 
 
-  const [showOptionWarning, setShowOptionWarning] = useState(false);
 
-  const [showModal, setShowModal] = useState(false);
-  const [showDetail, setShowDetail] = useState(false);
-  const [isTouchMode, setIsTouchMode] = useState(false);
-  const [showVoiceSwitchModal, setShowVoiceSwitchModal] = useState(false);
-  const [selectedTemp, setSelectedTemp] = useState(null);
-  const [selectedSize, setSelectedSize] = useState(null);
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [showSwitchModal, setShowSwitchModal] = useState(false);
-  const [isTalking, setIsTalking] = useState(false);
-  const [aiText, setAiText] = useState("어서오세요! 음성으로 주문해주세요.");  // ① 추가
-  const [isBlinking, setIsBlinking] = useState(false);
-  const [showStaffCallModal, setShowStaffCallModal] = useState(false);
-  const [isStaffCalling, setIsStaffCalling] = useState(false);
-
-  const [menuData, setMenuData] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [selectedMenu, setSelectedMenu] = useState(null);
-  const [availableSizes, setAvailableSizes] = useState([]);
-  const [availableTemps, setAvailableTemps] = useState([]);
-
-  const [cartItems, setCartItems] = useState([]);
-  const location = useLocation();
-  const [smartRecommendData, setSmartRecommendData] = useState([]);
 
   useEffect(() => {
     let ignore = false;

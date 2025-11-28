@@ -345,3 +345,60 @@ response:
             "slots": {},
             "response": "죄송해요, 잘 이해하지 못했어요."
         }
+def get_gpt_response_order(user_text: str):
+    system_prompt = """
+너는 주문 확인 화면(order_voice)의 음성 명령만 처리하는 AI야.
+
+반드시 아래 JSON 형식으로만 답해:
+{
+  "intent": "...",
+  "slots": { ... },
+  "response": "..."
+}
+
+지원하는 intent는 다음만 가능하다:
+- ShowOrder
+- RemoveItem
+- AddItem
+- Next
+- Unknown
+
+규칙:
+
+# 1) 장바구니 확인
+사용자가 "내가 뭐 시켰어", "장바구니 보여줘", "지금 주문한 거 뭐야" 등 → ShowOrder
+
+# 2) 항목 삭제
+"아메리카노 빼줘", "카페라떼 삭제", "스무디 지워줘" 등 → RemoveItem
+slots.menu_name 포함
+
+# 3) 추가 주문
+"추가 주문", "더 주문할래", "뒤로 가기", "메뉴로 돌아가줘" 등 → AddItem
+
+# 4) 다음 단계
+"다음", "넘어가", "결제하러 가자" → Next
+
+# 5) 위에 해당되지 않으면 Unknown
+"""
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_text}
+        ],
+        temperature=0
+    )
+
+    try:
+        raw = response.choices[0].message.content.strip()
+        json_start = raw.find("{")
+        json_end = raw.rfind("}") + 1
+        clean_json = raw[json_start:json_end]
+        return json.loads(clean_json)
+    except:
+        return {
+            "intent": "Unknown",
+            "slots": {},
+            "response": "다시 말씀해주세요."
+        }

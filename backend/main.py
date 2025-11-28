@@ -273,6 +273,99 @@ async def process_voice(file: UploadFile = File(...)):
         "next_action": next_action
     }
 
+# -----------------------------
+# order_voice 단계 음성 처리 엔드포인트 (🔥 신규)
+# -----------------------------
+@app.post("/voice_order_page")
+async def process_voice_in_order_page(file: UploadFile = File(...)):
+    filename = f"{uuid.uuid4()}.webm"
+    filepath = f"uploads/{filename}"
+
+    # 파일 저장
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # 1) STT
+    text = transcribe_from_mic(filepath)
+    print("🎤 [order_voice] STT 결과 ===>", text)
+
+    # 2) GPT 해석
+# 2) GPT 해석 (order_voice 전용 모델 사용)
+    from gpt_response import get_gpt_response_order
+
+    gpt_reply = get_gpt_response_order(text)
+    intent = gpt_reply.get("intent")
+    slots = gpt_reply.get("slots", {})
+
+
+    print("🧠 [order_voice] GPT intent =", intent, "slots =", slots)
+
+    # 3) order_voice 전용 intent 처리
+    # -------------------------------------------------------
+
+    # 1) 음료 삭제
+    if intent == "RemoveItem":
+        return {
+            "ai_text": f"{slots.get('menu_name')} 삭제할게요.",
+            "intent": "RemoveItem",
+            "slots": slots,
+            "audio_url": speak_and_return("삭제했습니다.")
+        }
+    # ⭐ NEW — 장바구니 보여줘
+# ⭐ FIXED — 장바구니 보여줘
+    if intent == "ShowOrder":
+        global cart
+
+        if not cart:
+            msg = "장바구니에 담긴 메뉴가 없어요."
+        else:
+            items_text = ", ".join([
+                f"{item['name']} {item['qty']}잔"
+                for item in cart
+            ])
+            msg = f"현재 주문하신 메뉴는 {items_text} 입니다."
+
+        return {
+            "ai_text": msg,
+            "intent": "ShowOrder",
+            "audio_url": speak_and_return(msg)
+        }
+
+
+
+    # 2) 음료 추가 → 메뉴 화면 이동
+    if intent == "AddItem":
+        return {
+            "ai_text": f"{slots.get('menu_name')} 한 잔 더 추가할게요.",
+            "intent": "AddItem",
+            "slots": slots,
+            "audio_url": speak_and_return(f"{slots.get('menu_name')} 한 잔 더 추가했습니다.")
+        }
+
+    # 3) 다음 단계
+    if intent == "Next":
+        return {
+            "ai_text": "다음 단계로 이동할게요.",
+            "intent": "Next",
+            "audio_url": speak_and_return("다음 단계로 이동합니다.")
+        }
+
+    # 기본 응답
+    return {
+        "ai_text": "현재 화면에서 할 수 있는 명령은 삭제, 추가, 다음 입니다.",
+        "intent": "Unknown",
+        "audio_url": speak_and_return("명령을 다시 말씀해주세요.")
+    }
+
+
+# -----------------------------
+# 공용 TTS 함수 (간편용)
+# -----------------------------
+def speak_and_return(text):
+    output_path = f"uploads/{uuid.uuid4()}.mp3"
+    speak(text, output_path)
+    return output_path
+
 
 # -----------------------------
 # 웰컴 멘트
