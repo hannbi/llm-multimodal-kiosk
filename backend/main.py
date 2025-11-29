@@ -865,13 +865,18 @@ def process_intent(intent, slots):
     # 장바구니 보기
     # --------------------
     if intent == "ShowOrder":
-        if not cart_items:
+    # cart_items가 현재 환경에 없으면 주문 단계가 아니므로 무시
+        if 'cart_items' not in globals() and 'cart' not in globals():
+            return "주문 단계가 아닙니다."
+
+        if not cart:
             return "장바구니가 비어 있어요."
 
         text = "현재 담긴 메뉴는 "
-        for item in cart_items:
+        for item in cart:
             text += f"{item['name']} {item['qty']}잔, "
         return text
+
 
     # --------------------
     # 장바구니 초기화
@@ -884,7 +889,7 @@ def process_intent(intent, slots):
     # 결제
     # --------------------
     if intent == "Payment":
-        if not cart_items:
+        if not cart:
             return "아직 담긴 메뉴가 없어요."
         return "결제를 진행할게요."
 
