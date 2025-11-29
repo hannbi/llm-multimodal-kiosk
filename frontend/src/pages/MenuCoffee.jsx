@@ -31,7 +31,7 @@ function MenuCoffee() {
     setTimeout(() => recorder.stop(), 6000);
   };
 
- 
+
   const [showOptionWarning, setShowOptionWarning] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
@@ -58,7 +58,7 @@ function MenuCoffee() {
   const location = useLocation();
   const [smartRecommendData, setSmartRecommendData] = useState([]);
 
- // 1️⃣ sendVoice 밖
+  // 1️⃣ sendVoice 밖
   const requestSmartRecommend = async (nutrient, compare) => {
     const res = await fetch(`http://localhost:5000/recommend?nutrient=${nutrient}&compare=${compare}`);
     const data = await res.json();
@@ -176,9 +176,20 @@ function MenuCoffee() {
             }
 
             // 🔥 사이즈도 자동 선택할지 (있으면)
+            // 🔥 사이즈도 자동 선택할지 (있으면)
             if (opt.sizes && opt.sizes.length === 1) {
               setSelectedSize(opt.sizes[0]);
+            } else {
+              // ⭐ 음성으로 사이즈 들어온 경우 자동 반영
+              if (data.slots.size) {
+                const s = data.slots.size.toLowerCase();
+                if (s.includes("small") || s.includes("스몰") || s.includes("작"))
+                  setSelectedSize("Small");
+                else if (s.includes("large") || s.includes("라지") || s.includes("큰"))
+                  setSelectedSize("Large");
+              }
             }
+
           });
       }
     }
@@ -282,7 +293,7 @@ function MenuCoffee() {
         (sum, item) => sum + item.price * item.qty,
         0
       );
-
+       console.log("🛒 MenuCoffee → order_voice로 전달하는 cartItems =", cartItems);
       // 👉 order_voice 페이지로 이동 + 장바구니/금액 전달
       navigate("/order_voice", {
         state: { cartItems, totalPrice },

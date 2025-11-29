@@ -3,7 +3,8 @@ load_dotenv()
 
 import time
 from speech_to_text import transcribe_from_mic
-
+from fastapi import Form
+import json
 from gpt_response import get_gpt_response
 from text_to_speech import speak
 import sqlite3
@@ -59,15 +60,28 @@ def normalize_temperature(t):
 def normalize_size(s):
     if not s:
         return None
-    s = s.lower()
 
-    if "small" in s or "스몰" in s or "작" in s:
-        return "Small"
+    s = s.lower().replace(" ", "")  # 공백 제거: "작은 걸로" → "작은걸로"
 
-    if "large" in s or "라지" in s or "큰" in s:
-        return "Large"
+    # Small 패턴
+    small_keywords = [
+        "small", "스몰", "작", "작게", "작은", "작은거", "작은걸로",
+        "소", "소자", "조그만", "조금만"  # 실제 사용자 발화 대응
+    ]
+    for kw in small_keywords:
+        if kw in s:
+            return "Small"
+
+    # Large 패턴
+    large_keywords = [
+        "large", "라지", "큰", "큰거", "큰걸로", "대", "대자"
+    ]
+    for kw in large_keywords:
+        if kw in s:
+            return "Large"
 
     return None
+
 
 
 # -----------------------------
@@ -95,6 +109,81 @@ def run_kiosk():
 
         print(f"🤖 최종 멘트: {response}")
 
+@app.post("/voice_usage_page")
+async def process_voice_usage_page(file: UploadFile = File(...)):
+    filename = f"{uuid.uuid4()}.webm"
+    filepath = f"uploads/{filename}"
+
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    text = transcribe_from_mic(filepath)
+    print("🎤 [usage_voice] STT ===>", text)
+
+    from gpt_response import get_gpt_response_usage
+    gpt_reply = get_gpt_response_usage(text)
+
+    intent = gpt_reply.get("intent")
+    answer = gpt_reply.get("response")
+
+    output = f"uploads/{uuid.uuid4()}.mp3"
+    speak(answer, output)
+
+    return {
+        "user_text": text,
+        "ai_text": answer,
+        "intent": intent,
+        "audio_url": output
+    }
+
+@app.post("/voice_paychoice_page")
+async def process_voice_paychoice_page(file: UploadFile = File(...)):
+    filename = f"{uuid.uuid4()}.webm"
+    filepath = f"uploads/{filename}"
+
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    text = transcribe_from_mic(filepath)
+    print("🎤 [paychoice_voice] STT ===>", text)
+
+    from gpt_response import get_gpt_response_paychoice
+    gpt_reply = get_gpt_response_paychoice(text)
+
+    intent = gpt_reply.get("intent")
+    answer = gpt_reply.get("response")
+
+    output = f"uploads/{uuid.uuid4()}.mp3"
+    speak(answer, output)
+
+    return {
+        "user_text": text,
+        "ai_text": answer,
+        "intent": intent,
+        "audio_url": output
+    }
+
+@app.post("/pay_process_voice_tts")
+async def pay_process_voice_tts():
+    text = "결제를 진행중입니다. 신용카드를 투입구에 넣어주세요."
+    output = f"uploads/{uuid.uuid4()}.mp3"
+    speak(text, output)
+
+    return {
+        "ai_text": text,
+        "audio_url": output
+    }
+
+@app.post("/complete_voice_tts")
+async def complete_voice_tts():
+    text = "결제가 완료되었습니다. 잠시 후 주문이 준비됩니다."
+    output = f"uploads/{uuid.uuid4()}.mp3"
+    speak(text, output)
+
+    return {
+        "ai_text": text,
+        "audio_url": output
+    }
 
 # -----------------------------
 # 이미지 업로드
@@ -273,13 +362,24 @@ async def process_voice(file: UploadFile = File(...)):
         "next_action": next_action
     }
 
-# -----------------------------
-# order_voice 단계 음성 처리 엔드포인트 (🔥 신규)
+
+# order_voice 단계 음성 처리 엔드포인트 (🔥 수정완료)
 # -----------------------------
 @app.post("/voice_order_page")
-async def process_voice_in_order_page(file: UploadFile = File(...)):
+async def process_voice_in_order_page(
+    file: UploadFile = File(...),
+    cart: str = Form("")   # ← 반드시 cart 로 수정!
+):
+    global cart_items
+
+    try:
+        cart_items = json.loads(cart) if cart else []
+    except:
+        cart_items = []
+
     filename = f"{uuid.uuid4()}.webm"
     filepath = f"uploads/{filename}"
+
 
     # 파일 저장
     with open(filepath, "wb") as buffer:
@@ -290,17 +390,16 @@ async def process_voice_in_order_page(file: UploadFile = File(...)):
     print("🎤 [order_voice] STT 결과 ===>", text)
 
     # 2) GPT 해석
-# 2) GPT 해석 (order_voice 전용 모델 사용)
     from gpt_response import get_gpt_response_order
 
     gpt_reply = get_gpt_response_order(text)
     intent = gpt_reply.get("intent")
     slots = gpt_reply.get("slots", {})
 
-
     print("🧠 [order_voice] GPT intent =", intent, "slots =", slots)
 
-    # 3) order_voice 전용 intent 처리
+    # -------------------------------------------------------
+    # 🔥 order_voice 전용 intent 처리
     # -------------------------------------------------------
 
     # 1) 음료 삭제
@@ -309,54 +408,57 @@ async def process_voice_in_order_page(file: UploadFile = File(...)):
             "ai_text": f"{slots.get('menu_name')} 삭제할게요.",
             "intent": "RemoveItem",
             "slots": slots,
+            "cart": enrich_cart(cart_items),
             "audio_url": speak_and_return("삭제했습니다.")
         }
-    # ⭐ NEW — 장바구니 보여줘
-# ⭐ FIXED — 장바구니 보여줘
-    if intent == "ShowOrder":
-        global cart
 
-        if not cart:
+    # 2) 장바구니 보여줘
+    if intent == "ShowOrder":
+
+        if not cart_items:
             msg = "장바구니에 담긴 메뉴가 없어요."
         else:
             items_text = ", ".join([
                 f"{item['name']} {item['qty']}잔"
-                for item in cart
+                for item in cart_items   # ← 여기가 진짜 cart!!!!!
             ])
             msg = f"현재 주문하신 메뉴는 {items_text} 입니다."
 
         return {
             "ai_text": msg,
             "intent": "ShowOrder",
+            "cart": enrich_cart(cart_items),
             "audio_url": speak_and_return(msg)
         }
 
-
-
-    # 2) 음료 추가 → 메뉴 화면 이동
+    # 3) 음료 추가
     if intent == "AddItem":
         return {
             "ai_text": f"{slots.get('menu_name')} 한 잔 더 추가할게요.",
             "intent": "AddItem",
             "slots": slots,
-            "audio_url": speak_and_return(f"{slots.get('menu_name')} 한 잔 더 추가했습니다.")
+            "cart": enrich_cart(cart_items),   # 현재 장바구니 함께 리턴
+            "audio_url": speak_and_return(
+                f"{slots.get('menu_name')} 한 잔 더 추가했습니다."
+            )
         }
 
-    # 3) 다음 단계
+    # 4) 다음 단계
     if intent == "Next":
         return {
             "ai_text": "다음 단계로 이동할게요.",
             "intent": "Next",
+            "cart": enrich_cart(cart_items),
             "audio_url": speak_and_return("다음 단계로 이동합니다.")
         }
 
-    # 기본 응답
+    # 5) 기본 응답
     return {
         "ai_text": "현재 화면에서 할 수 있는 명령은 삭제, 추가, 다음 입니다.",
         "intent": "Unknown",
+        "cart": enrich_cart(cart_items),
         "audio_url": speak_and_return("명령을 다시 말씀해주세요.")
     }
-
 
 # -----------------------------
 # 공용 TTS 함수 (간편용)
@@ -366,6 +468,39 @@ def speak_and_return(text):
     speak(text, output_path)
     return output_path
 
+def enrich_cart(cart):
+    import os
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, "kiosk.db")
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+
+    enriched = []
+    for item in cart:
+        cur.execute("""
+            SELECT Product.price, MenuItem.image_url
+            FROM Product
+            JOIN MenuItem ON Product.menu_id = MenuItem.menu_id
+            WHERE MenuItem.name = ?
+            LIMIT 1
+        """, (item["name"],))
+
+        row = cur.fetchone()
+        price = row[0] if row else 0
+        img = row[1] if row else ""
+
+        enriched.append({
+            "name": item["name"],
+            "qty": item.get("qty", 1),
+            "price": price,
+            "img": img,
+            "temp": item.get("temperature") or item.get("temp"),
+            "size": item.get("size"),
+            "option": item.get("option")
+        })
+
+    conn.close()
+    return enriched
 
 # -----------------------------
 # 웰컴 멘트
@@ -454,6 +589,8 @@ def process_intent(intent, slots):
     # --------------------
     if intent == "BuildOrder":
         name = slots.get("menu_name")
+        if not name:  # 🔥 메뉴 이름이 None일 때 처리
+            return "어떤 메뉴를 원하시는지 말씀해주세요."
         qty = slots.get("quantity", 1)
         temp = normalize_temperature(slots.get("temperature"))
         size = normalize_size(slots.get("size"))
@@ -728,11 +865,11 @@ def process_intent(intent, slots):
     # 장바구니 보기
     # --------------------
     if intent == "ShowOrder":
-        if not cart:
+        if not cart_items:
             return "장바구니가 비어 있어요."
 
         text = "현재 담긴 메뉴는 "
-        for item in cart:
+        for item in cart_items:
             text += f"{item['name']} {item['qty']}잔, "
         return text
 
@@ -747,7 +884,7 @@ def process_intent(intent, slots):
     # 결제
     # --------------------
     if intent == "Payment":
-        if not cart:
+        if not cart_items:
             return "아직 담긴 메뉴가 없어요."
         return "결제를 진행할게요."
 

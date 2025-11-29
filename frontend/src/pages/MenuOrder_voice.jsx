@@ -11,7 +11,7 @@ function MenuOrder_voice() {
   const { cartItems: initialCart = [], totalPrice: initialTotal = 0 } = location.state || {};
   const [cartItems, setCartItems] = useState(initialCart);
   const [totalPrice, setTotalPrice] = useState(initialTotal);
-
+  const [menuData, setMenuData] = useState({});
 
   const [isTouchMode, setIsTouchMode] = useState(false);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
@@ -56,60 +56,122 @@ function MenuOrder_voice() {
 
     const data = await res.json();
 
-// 🔥 AI 텍스트 먼저 업데이트
-setAiText(data.ai_text || "명령을 이해하지 못했어요.");
+    // 🔥 AI 텍스트 먼저 업데이트
+    setAiText(data.ai_text || "명령을 이해하지 못했어요.");
 
-// 🔥 음성 재생 먼저 처리
-if (data.audio_url) {
-  const audio = new Audio("http://localhost:5000/" + data.audio_url);
-  audio.play();
+    // 🔥 음성 재생 먼저 처리
+    if (data.audio_url) {
+      const audio = new Audio("http://localhost:5000/" + data.audio_url);
+      audio.play();
 
-  // 🔥 navigate는 오디오 재생 끝난 후 실행되도록 처리
-  audio.onended = () => {
-    
-    // 삭제 처리
-    if (data.intent === "RemoveItem" && data.slots?.menu_name) {
-      const name = data.slots.menu_name;
-      const updated = cartItems.filter((item) => item.name !== name);
-      setCartItems(updated);
-      setTotalPrice(updated.reduce((s, i) => s + i.price * i.qty, 0));
-    }
+      // 🔥 navigate는 오디오 재생 끝난 후 실행되도록 처리
+      audio.onended = () => {
+        setCartItems((prevCart) => {
+          // 🔥 서버가 cart 전체를 준 경우 → 그대로 반영하고 끝
+          if (data.cart) {
+            setTotalPrice(
+              data.cart.reduce((sum, item) => sum + item.price * item.qty, 0)
+            );
+            return data.cart;
+          }
 
-    // 추가 → 메뉴커피로 이동
-// 🔥 추가(수량 증가)
-if (data.intent === "AddItem" && data.slots?.menu_name) {
-  const name = data.slots.menu_name;
+          let finalCart = [...prevCart];
 
-  // 기존에 있는지 찾고
-  const updated = cartItems.map(item => {
-    if (item.name === name) {
-      return { ...item, qty: item.qty + 1 };
-    }
-    return item;
-  });
+          // 🔥 삭제 처리
+          if (data.intent === "RemoveItem" && data.slots?.menu_name) {
+            const name = data.slots.menu_name;
 
-  // 없으면 새로 추가
-  const found = cartItems.find(item => item.name === name);
-  const finalCart = found
-    ? updated
-    : [...cartItems, { name, qty: 1, price: data.price || 0 }];
+            finalCart = finalCart.filter(
+              (item) =>
+                !item.name.includes(name) && !name.includes(item.name)
+            );
+          }
 
-  setCartItems(finalCart);
-  setTotalPrice(finalCart.reduce((s, i) => s + i.price * i.qty, 0));
+          // 🔥 AddItem 처리 (기존 구조 유지)
+          // 🔥 AddItem 처리 (기존 구조 유지)
+          if (data.intent === "AddItem" && data.slots?.menu_name) {
+            if (!menuData || Object.keys(menuData).length === 0) {
+              console.log("⚠ 메뉴 정보 아직 로딩되지 않음");
+              return prevCart;
+            }
+            const name = data.slots.menu_name;
+            const addQty = Number(data.slots.quantity) || 1;
 
-  return; // 이동 X
-}
+            // 🔥 menuData 안에서 해당 메뉴의 기본 정보 찾기
+            const menuInfo = Object.values(menuData || {})
+              .flat()
+              .find((m) => m.name === name);
+
+            if (!menuInfo) {
+              console.log("⚠ 메뉴 정보를 찾지 못함:", name);
+              return prevCart;
+            }
+
+            const exists = finalCart.find((item) => item.name === name);
+
+            if (exists) {
+              // 기존 상품 → 수량만 증가
+              finalCart = finalCart.map((item) =>
+                item.name === name
+                  ? { ...item, qty: item.qty + addQty }
+                  : item
+              );
+            } else {
+              // 🔥 새 상품 추가 — MenuCoffee 구조 그대로
+              finalCart.push({
+                name,
+                qty: addQty,
+                img: menuInfo.img,
+                price: menuInfo.price,
+                temp: data.slots.temperature || null,
+                size: data.slots.size || null,
+                option: data.slots.option || null,
+              });
+            }
+          }
 
 
-    // 다음 → usage_voice 이동
-    if (data.intent === "Next") {
-      navigate("/paychoice_voice", { state: { cartItems, totalPrice } });
+          // 🔥 총액 계산
+          setTotalPrice(
+            finalCart.reduce((sum, item) => sum + item.price * item.qty, 0)
+          );
+
+          return finalCart;
+        });
+
+
+        // ⭐ 다음 단계로 이동
+        if (data.intent === "Next") {
+          navigate("/usage_voice", {
+            state: {
+              cartItems: data.cart,        // 🔥 최신 장바구니로 변경
+              totalPrice: data.cart.reduce((sum, item) => sum + item.price * item.qty, 0)
+            },
+          });
+        }
+      };
     }
   };
-}
 
-  };
 
+  useEffect(() => {
+    fetch("http://localhost:5000/api/menu")
+      .then((res) => res.json())
+      .then((data) => {
+        const grouped = {};
+        data.forEach((item) => {
+          if (!grouped[item.category]) grouped[item.category] = [];
+          grouped[item.category].push({
+            name: item.name,
+            price: item.price,
+            img: item.image_url,
+            category: item.category
+          });
+        });
+        setMenuData(grouped);
+      })
+      .catch(err => console.error("❌ 메뉴 불러오기 실패:", err));
+  }, []);
 
   // 눈 깜빡임
   useEffect(() => {

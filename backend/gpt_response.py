@@ -184,6 +184,12 @@ slots:
 → slots.nutrient = null (전체 정보 요청)
 → response = "아메리카노의 상세정보입니다." 처럼 한 문장 생성
 
+만약 사용자가 "세 잔 주세요", "두 잔 더요", "3잔요"처럼
+메뉴 이름 없이 수량만 말한 경우에는 menu_name을 null로 두고,
+intent는 반드시 "AddItem"이 아니라 "Unknown" 또는 "AskMenu"로 설정한다.
+
+절대 menu_name을 None, 세, 잔 등의 이상한 값으로 넣지 말 것.
+
 
 /// 🔥 ChangeCategory 규칙
 
@@ -401,4 +407,103 @@ slots.menu_name 포함
             "intent": "Unknown",
             "slots": {},
             "response": "다시 말씀해주세요."
+        }
+def get_gpt_response_usage(user_text: str):
+    system_prompt = """
+너는 '이용 방식 선택 화면(usage_voice)' 음성 안내 AI야.
+
+반드시 아래 JSON 형식으로만 답해:
+{
+  "intent": "...",
+  "response": "..."
+}
+
+가능한 intent:
+- Next
+- Unknown
+
+아래 단어가 포함되면 intent="Next":
+- "먹고"
+- "매장"
+- "먹고갈"
+- "먹고 갈"
+- "포장"
+- "테이크아웃"
+- "take out"
+- "가져갈"
+- "가져 갈"
+
+그 외 문장은 intent="Unknown"
+"""
+
+    reply = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_text}
+        ],
+        temperature=0
+    )
+
+    try:
+        raw = reply.choices[0].message.content.strip()
+        json_start = raw.find("{")
+        json_end = raw.rfind("}") + 1
+        return json.loads(raw[json_start:json_end])
+    except:
+        return {
+            "intent": "Unknown",
+            "response": "이용 방식을 다시 말씀해주세요."
+        }
+def get_gpt_response_paychoice(user_text: str):
+    system_prompt = """
+너는 결제 수단 선택 화면(paychoice_voice)의 음성 도우미야.
+
+반드시 JSON 형식으로 답해:
+{
+  "intent": "...",
+  "response": "..."
+}
+
+intent는 다음만 사용:
+- Next
+- Unknown
+
+아래 결제 수단 단어가 포함되면 intent="Next":
+- "카드"
+- "카드결제"
+- "현금"
+- "현금 결제"
+- "카카오"
+- "카카오페이"
+- "페이코"
+- "제로"
+- "제로페이"
+- "네이버"
+- "네이버페이"
+
+intent="Next" 일 때 response 예시:
+"결제를 진행하겠습니다."
+
+그 외 단어는 intent="Unknown"
+"""
+
+    reply = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_text}
+        ],
+        temperature=0
+    )
+
+    try:
+        raw = reply.choices[0].message.content.strip()
+        json_start = raw.find("{")
+        json_end = raw.rfind("}") + 1
+        return json.loads(raw[json_start:json_end])
+    except:
+        return {
+            "intent": "Unknown",
+            "response": "결제 수단을 다시 말씀해주세요."
         }
