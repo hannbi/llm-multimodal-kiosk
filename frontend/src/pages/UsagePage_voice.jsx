@@ -39,33 +39,66 @@ function UsageVoice() {
   };
 
   // 🔥 서버로 전송
-  const sendVoice = async (blob) => {
-    const formData = new FormData();
-    formData.append("file", blob, "audio.webm");
+const sendVoice = async (blob) => {
+  const formData = new FormData();
+  formData.append("file", blob, "audio.webm");
 
-    const res = await fetch("http://localhost:5000/voice_usage_page", {
-      method: "POST",
-      body: formData,
-    });
+  const res = await fetch("http://localhost:5000/voice_usage_page", {
+    method: "POST",
+    body: formData,
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    // 출력 문장
-    setAiText(data.ai_text || "다시 말씀해주세요.");
+  // 화면에 표시되는 문장 업데이트
+  setAiText(data.ai_text || "다시 말씀해주세요.");
 
-    // 음성 재생
+  try {
+    // ✔ 먹고가기
+    if (data.intent === "EatHere") {
+      setAiText("먹고 가시는군요. 다음 단계로 이동합니다.");
+    }
+
+    // ✔ 포장하기
+    if (data.intent === "TakeOut") {
+      setAiText("포장하시는군요. 다음 단계로 이동합니다.");
+    }
+
+  } finally {
+    // 어떤 경우에도 음성 재생
     if (data.audio_url) {
       const audio = new Audio("http://localhost:5000/" + data.audio_url);
-      audio.play();
+
+      audio.play().catch((err) => console.error("음성 재생 오류:", err));
 
       audio.onended = () => {
-        // intent === "Next" → 결제 페이지 이동
-        if (data.intent === "Next") {
+        // ✔ intent가 EatHere 또는 TakeOut이면 다음페이지 이동
+        if (data.intent === "EatHere" || data.intent === "TakeOut") {
           navigate("/paychoice_voice");
         }
       };
     }
-  };
+  }
+};
+
+
+// 페이지 처음 들어올 때 웰컴 음성 재생
+useEffect(() => {
+  async function playWelcome() {
+    const res = await fetch("http://localhost:5000/usage_voice_tts_intro", {
+      method: "POST"
+    });
+    const data = await res.json();
+
+    if (data.audio_url) {
+      const audio = new Audio("http://localhost:5000/" + data.audio_url);
+      audio.play().catch(err => console.log("초기 음성 재생 오류:", err));
+    }
+  }
+
+  playWelcome();
+}, []);
+
 
   // 눈 깜빡임
   useEffect(() => {

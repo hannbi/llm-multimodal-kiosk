@@ -471,21 +471,42 @@ def get_gpt_response_usage(user_text: str):
 }
 
 가능한 intent:
-- Next
+- EatHere
+- TakeOut
 - Unknown
 
-아래 단어가 포함되면 intent="Next":
+규칙:
+
+# 1) 먹고가기 의도(EatHere)
+다음 표현 중 하나라도 포함되면 intent="EatHere":
 - "먹고"
 - "매장"
 - "먹고갈"
 - "먹고 갈"
+- "먹고 가요"
+- "먹고 가는"
+- "여기서"
+- "여기서 먹"
+
+response 예시:
+"먹고 가시는군요. 다음 단계로 이동합니다."
+
+# 2) 포장 의도(TakeOut)
+다음 표현 중 포함되면 intent="TakeOut":
 - "포장"
 - "테이크아웃"
 - "take out"
 - "가져갈"
 - "가져 갈"
+- "가지고 갈"
+- "갖고 갈"
 
+response 예시:
+"포장하시는군요. 다음 단계로 이동합니다."
+
+# 3) 인식 불가 (Unknown)
 그 외 문장은 intent="Unknown"
+response="이용 방식을 다시 말씀해주세요."
 """
 
     reply = client.chat.completions.create(
@@ -507,6 +528,7 @@ def get_gpt_response_usage(user_text: str):
             "intent": "Unknown",
             "response": "이용 방식을 다시 말씀해주세요."
         }
+
 def get_gpt_response_paychoice(user_text: str):
     system_prompt = """
 너는 결제 수단 선택 화면(paychoice_voice)의 음성 도우미야.

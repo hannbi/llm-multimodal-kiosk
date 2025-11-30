@@ -67,6 +67,28 @@ function PayChoice_voice() {
     }
   };
 
+  // 페이지 처음 들어올 때 웰컴 음성 재생
+useEffect(() => {
+  async function playWelcome() {
+    try {
+      const res = await fetch("http://localhost:5000/paychoice_voice_tts_intro", {
+        method: "POST"
+      });
+      const data = await res.json();
+
+      if (data.audio_url) {
+        const audio = new Audio("http://localhost:5000/" + data.audio_url);
+        audio.play().catch(err => console.log("초기 음성 재생 오류:", err));
+      }
+    } catch (err) {
+      console.log("초기 음성 fetch 실패:", err);
+    }
+  }
+
+  playWelcome();
+}, []);
+
+
   // ⭐ 눈 깜빡임
   useEffect(() => {
     const interval = setInterval(() => {

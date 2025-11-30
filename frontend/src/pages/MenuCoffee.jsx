@@ -73,32 +73,34 @@ function MenuCoffee() {
   };
 
 
-  const sendVoice = async (blob) => {
-    const formData = new FormData();
-    formData.append("file", blob, "audio.webm");
+const sendVoice = async (blob) => {
+  const formData = new FormData();
+  formData.append("file", blob, "audio.webm");
 
-    const res = await fetch("http://localhost:5000/voice", {
-      method: "POST",
-      body: formData,
-    });
+  const res = await fetch("http://localhost:5000/voice", {
+    method: "POST",
+    body: formData,
+  });
 
+  const data = await res.json();
 
+  setAiText(data.ai_text);
 
-    const data = await res.json();
+  // 🔥 menuData가 로딩되지 않았다면 모달 띄우기 중단
+  if (!menuData || Object.keys(menuData).length === 0) {
+    console.log("⚠ menuData 아직 로딩 안됨");
+    return;
+  }
 
-    setAiText(data.ai_text);
-
-    // 🔥 menuData가 로딩되지 않았다면 모달 띄우기 중단
-    if (!menuData || Object.keys(menuData).length === 0) {
-      console.log("⚠ menuData 아직 로딩 안됨");
-      return;
-    }
+  // ----------------------------
+  //  try 내부에서 모든 intent 처리
+  // ----------------------------
+  try {
 
     // 🔥 음성으로 카테고리 변경
     if (data.intent === "ChangeCategory" && data.slots?.category) {
       const category = data.slots.category;
 
-      // 프론트 카테고리 이름과 매핑
       const mapping = {
         "커피": "커피",
         "티/에이드": "티/에이드",
@@ -115,22 +117,19 @@ function MenuCoffee() {
         setActiveCategory(normalized);
         setAiText(`${normalized} 화면입니다.`);
 
-        // 스크롤 맨 위로 이동
         setTimeout(() => {
           const scrollArea = document.querySelector('.menu-scroll-area');
           if (scrollArea) scrollArea.scrollTop = 0;
         }, 50);
       }
 
-      return; // 더 이상 아래로 내려가지 않게
+      return;
     }
 
-    // 🔥 SmartRecommend 처리 (추천 자동 이동)
+    // 🔥 스마트추천 intent
     if (data.intent === "SmartRecommend" && data.recommend) {
       setActiveCategory("스마트추천");
       setSmartRecommendData(data.recommend);
-
-      // ⭐ 음성 안내문 갱신
       setAiText(data.ai_text);
 
       setTimeout(() => {
@@ -141,111 +140,95 @@ function MenuCoffee() {
       return;
     }
 
+    // 🔥 BuildOrder → 옵션 모달 자동 오픈
+    if (data.intent === "BuildOrder" && data.slots?.menu_name) {
+      const menuName = data.slots.menu_name;
 
+      const foundMenu = Object.values(menuData)
+        .flat()
+        .find((m) => m.name === menuName);
 
-    // 🔥 GPT가 BuildOrder + menu_name을 보냈으면 옵션 모달 자동 오픈
-    // 🔥 GPT가 BuildOrder + menu_name을 보냈으면 옵션 모달 자동 오픈
-// 🔥 GPT가 BuildOrder + menu_name을 보냈으면 옵션 모달 자동 오픈
-if (data.intent === "BuildOrder" && data.slots?.menu_name) {
-  const menuName = data.slots.menu_name;
+      if (foundMenu) {
+        setSelectedMenu(foundMenu);
+        setShowModal(true);
 
-  const foundMenu = Object.values(menuData)
-    .flat()
-    .find((m) => m.name === menuName);
+        fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
+          .then((res) => res.json())
+          .then((opt) => {
+            setAvailableSizes(opt.sizes || []);
+            setAvailableTemps(opt.temperatures || []);
 
-  if (foundMenu) {
-    setSelectedMenu(foundMenu);
-    setShowModal(true);
+            // 온도 자동 선택
+            if (opt.temperatures?.length === 1) {
+              setSelectedTemp(opt.temperatures[0]);
+            } else if (data.slots.temperature) {
+              const t = data.slots.temperature.toLowerCase();
+              if (t.includes("ice")) setSelectedTemp("Iced");
+              else if (t.includes("hot") || t.includes("뜨") || t.includes("핫"))
+                setSelectedTemp("Hot");
+            }
 
-    fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
-      .then((res) => res.json())
-      .then((opt) => {
-        setAvailableSizes(opt.sizes || []);
-        setAvailableTemps(opt.temperatures || []);
+            // 사이즈 자동 선택
+            if (opt.sizes?.length === 1) {
+              setSelectedSize(opt.sizes[0]);
+            } else if (data.slots.size) {
+              const s = data.slots.size.toLowerCase();
+              if (s.includes("small") || s.includes("스몰") || s.includes("작"))
+                setSelectedSize("Small");
+              else if (s.includes("large") || s.includes("라지") || s.includes("큰"))
+                setSelectedSize("Large");
+            }
 
-        // 🔥 온도 자동 선택
-        if (opt.temperatures?.length === 1) {
-          setSelectedTemp(opt.temperatures[0]);
-        } else if (data.slots.temperature) {
-          const t = data.slots.temperature.toLowerCase();
-          if (t.includes("ice")) setSelectedTemp("Iced");
-          else if (t.includes("hot") || t.includes("뜨") || t.includes("핫"))
-            setSelectedTemp("Hot");
-        }
+            // 커피 옵션 자동 선택
+            if (activeCategory === "커피" && data.slots.option_strength) {
+              const optText = data.slots.option_strength.toLowerCase();
+              if (optText.includes("연")) setSelectedOption("연하게");
+              else if (optText.includes("기본")) setSelectedOption("기본");
+              else if (optText.includes("진")) setSelectedOption("진하게");
+            }
+          });
+      }
 
-        // 🔥 사이즈 자동 선택
-        if (opt.sizes?.length === 1) {
-          setSelectedSize(opt.sizes[0]);
-        } else if (data.slots.size) {
-          const s = data.slots.size.toLowerCase();
-          if (s.includes("small") || s.includes("스몰") || s.includes("작"))
-            setSelectedSize("Small");
-          else if (s.includes("large") || s.includes("라지") || s.includes("큰"))
-            setSelectedSize("Large");
-        }
+      return;
+    }
 
-        // ⭐⭐⭐ 추가 옵션 자동 선택 (커피 카테고리만)
-        if (activeCategory === "커피" && data.slots.option_strength) {
-          const optText = data.slots.option_strength.toLowerCase();
+    // 🔥 OptionSelect
+    if (data.intent === "OptionSelect") {
+      const { temperature, size, option_strength } = data.slots;
 
-          if (optText.includes("연")) setSelectedOption("연하게");
-          else if (optText.includes("기본")) setSelectedOption("기본");
-          else if (optText.includes("진")) setSelectedOption("진하게");
-        }
-      });
-  }
+      if (data.ai_text.includes("제공되지 않아요")) {
+        setSelectedTemp(null);
+        setSelectedSize(null);
+        setSelectedOption(null);
+        return;
+      }
 
-  return; // 기존 기능 그대로 유지
-}
+      if (temperature) {
+        let normalizedTemp = null;
+        const t = temperature.toLowerCase();
+        if (t.includes("ice")) normalizedTemp = "Iced";
+        else if (t.includes("hot") || t.includes("뜨") || t.includes("핫"))
+          normalizedTemp = "Hot";
+        if (normalizedTemp) setSelectedTemp(normalizedTemp);
+      }
 
+      if (size) {
+        let normalizedSize = null;
+        const s = size.toLowerCase();
+        if (s.includes("small") || s.includes("스몰")) normalizedSize = "Small";
+        else if (s.includes("large") || s.includes("라지")) normalizedSize = "Large";
+        if (normalizedSize) setSelectedSize(normalizedSize);
+      }
 
+      if (option_strength) {
+        const o = option_strength.toLowerCase();
+        if (o.includes("연")) setSelectedOption("연하게");
+        else if (o.includes("기본")) setSelectedOption("기본");
+        else if (o.includes("진")) setSelectedOption("진하게");
+      }
+    }
 
-
-
-if (data.intent === "OptionSelect") {
-  const { temperature, size, option_strength } = data.slots;
-
-  // ⚠ 서버가 '제공되지 않아요'라고 말한 경우 → 선택 초기화
-  if (data.ai_text.includes("제공되지 않아요")) {
-    setSelectedTemp(null);
-    setSelectedSize(null);
-    setSelectedOption(null);
-    return;
-  }
-
-  // 🔥 온도 정규화 후 적용
-  if (temperature) {
-    let normalizedTemp = null;
-    const t = temperature.toLowerCase();
-
-    if (t.includes("ice")) normalizedTemp = "Iced";
-    else if (t.includes("hot") || t.includes("뜨") || t.includes("핫")) normalizedTemp = "Hot";
-
-    if (normalizedTemp) setSelectedTemp(normalizedTemp);
-  }
-
-  // 🔥 사이즈 정규화 후 적용
-  if (size) {
-    let normalizedSize = null;
-    const s = size.toLowerCase();
-
-    if (s.includes("small") || s.includes("스몰")) normalizedSize = "Small";
-    else if (s.includes("large") || s.includes("라지")) normalizedSize = "Large";
-
-    if (normalizedSize) setSelectedSize(normalizedSize);
-  }
-
-  // ⭐⭐⭐ 추가 옵션 자동 선택
-  if (option_strength) {
-    const o = option_strength.toLowerCase();
-
-    if (o.includes("연")) setSelectedOption("연하게");
-    else if (o.includes("기본")) setSelectedOption("기본");
-    else if (o.includes("진")) setSelectedOption("진하게");
-  }
-}
-
-    // 🔥 영양 정보 질의 → 옵션창 자동 열기 + 상세정보 자동 펼치기
+    // 🔥 NutritionQuery → 옵션창 열기
     if (data.intent === "NutritionQuery" && data.slots?.menu_name) {
       const menuName = data.slots.menu_name;
 
@@ -256,26 +239,21 @@ if (data.intent === "OptionSelect") {
       if (foundMenu) {
         setSelectedMenu(foundMenu);
         setShowModal(true);
-        setShowDetail(true); // 상세정보 자동 펼치기
+        setShowDetail(true);
 
-        // 🔥 옵션 초기화 (아주 중요)
         setSelectedTemp(null);
         setSelectedSize(null);
         setSelectedOption(null);
 
-        // 옵션 데이터 불러오기
         fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
           .then((res) => res.json())
           .then((opt) => {
             setAvailableSizes(opt.sizes || []);
             setAvailableTemps(opt.temperatures || []);
 
-            // 온도 옵션이 1개면 자동 선택
             if (opt.temperatures?.length === 1) {
               setSelectedTemp(opt.temperatures[0]);
             }
-
-            // 사이즈 옵션이 1개면 자동 선택
             if (opt.sizes?.length === 1) {
               setSelectedSize(opt.sizes[0]);
             }
@@ -283,39 +261,37 @@ if (data.intent === "OptionSelect") {
       }
     }
 
-
+    // 🔥 AddToCart
     if (data.intent === "AddToCart") {
-      // 기존 장바구니 담기 로직 실행
       handleAddToCart();
-
-      // 옵션창 자동 닫기
       setShowModal(false);
-
-      // 옵션 초기화
       setSelectedTemp(null);
       setSelectedSize(null);
       setSelectedOption(null);
     }
 
-    // 🔥 [추가] 결제 의도(Payment) 들어오면 order_voice로 이동
+    // 🔥 Payment → 다음 페이지 이동
     if (data.intent === "Payment" || data.next_action === "go_payment") {
-      // 장바구니 총 금액 다시 계산
       const totalPrice = cartItems.reduce(
         (sum, item) => sum + item.price * item.qty,
         0
       );
-       console.log("🛒 MenuCoffee → order_voice로 전달하는 cartItems =", cartItems);
-      // 👉 order_voice 페이지로 이동 + 장바구니/금액 전달
+
       navigate("/order_voice", {
         state: { cartItems, totalPrice },
       });
     }
 
-    // 음성 재생
-    const audio = new Audio("http://localhost:5000/" + data.audio_url);
-    audio.play();
-  };
-
+  } finally {
+    // ----------------------------
+    // ✔ 반드시 음성 재생 — 어떤 intent라도
+    // ----------------------------
+    if (data.audio_url) {
+      const audio = new Audio("http://localhost:5000/" + data.audio_url);
+      audio.play().catch(err => console.error("음성 재생 오류:", err));
+    }
+  }
+};
 
 
 

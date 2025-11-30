@@ -141,6 +141,29 @@ async def process_voice_usage_page(file: UploadFile = File(...)):
         "audio_url": output
     }
 
+@app.post("/usage_voice_tts_intro")
+async def usage_voice_tts_intro():
+    text = "이용 방식을 말씀해주세요."
+    output = f"uploads/{uuid.uuid4()}.mp3"
+    speak(text, output)
+
+    return {
+        "ai_text": text,
+        "audio_url": output
+    }
+
+@app.post("/paychoice_voice_tts_intro")
+async def paychoice_voice_tts_intro():
+    text = "결제 수단을 말씀해주세요."
+    output = f"uploads/{uuid.uuid4()}.mp3"
+    speak(text, output)
+
+    return {
+        "ai_text": text,
+        "audio_url": output
+    }
+
+
 @app.post("/voice_paychoice_page")
 async def process_voice_paychoice_page(file: UploadFile = File(...)):
     filename = f"{uuid.uuid4()}.webm"
@@ -362,7 +385,7 @@ async def process_voice(file: UploadFile = File(...)):
         "ai_text": answer["message"] if isinstance(answer, dict) else answer,
         "intent": intent,
         "slots": slots,
-        "recommend": answer["recommend"] if isinstance(answer, dict) else None,
+        "recommend": answer.get("recommend") if isinstance(answer, dict) else None,
         "audio_url": output_path,
         "next_action": next_action
     }
