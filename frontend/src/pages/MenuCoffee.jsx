@@ -145,94 +145,105 @@ function MenuCoffee() {
 
     // 🔥 GPT가 BuildOrder + menu_name을 보냈으면 옵션 모달 자동 오픈
     // 🔥 GPT가 BuildOrder + menu_name을 보냈으면 옵션 모달 자동 오픈
-    if (data.intent === "BuildOrder" && data.slots?.menu_name) {
-      const menuName = data.slots.menu_name;
+// 🔥 GPT가 BuildOrder + menu_name을 보냈으면 옵션 모달 자동 오픈
+if (data.intent === "BuildOrder" && data.slots?.menu_name) {
+  const menuName = data.slots.menu_name;
 
-      const foundMenu = Object.values(menuData)
-        .flat()
-        .find((m) => m.name === menuName);
+  const foundMenu = Object.values(menuData)
+    .flat()
+    .find((m) => m.name === menuName);
 
-      if (foundMenu) {
-        setSelectedMenu(foundMenu);
-        setShowModal(true);
+  if (foundMenu) {
+    setSelectedMenu(foundMenu);
+    setShowModal(true);
 
-        fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
-          .then((res) => res.json())
-          .then((opt) => {
-            setAvailableSizes(opt.sizes || []);
-            setAvailableTemps(opt.temperatures || []);
+    fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
+      .then((res) => res.json())
+      .then((opt) => {
+        setAvailableSizes(opt.sizes || []);
+        setAvailableTemps(opt.temperatures || []);
 
-            // 🔥 온도 옵션 자동 선택
-            if (opt.temperatures && opt.temperatures.length === 1) {
-              setSelectedTemp(opt.temperatures[0]);  // 자동 선택
-            } else {
-              // 음성으로 온도가 들어온 경우 적용
-              if (data.slots.temperature) {
-                const t = data.slots.temperature.toLowerCase();
-                if (t.includes("ice")) setSelectedTemp("Iced");
-                else if (t.includes("hot") || t.includes("뜨") || t.includes("핫"))
-                  setSelectedTemp("Hot");
-              }
-            }
-
-            // 🔥 사이즈도 자동 선택할지 (있으면)
-            // 🔥 사이즈도 자동 선택할지 (있으면)
-            if (opt.sizes && opt.sizes.length === 1) {
-              setSelectedSize(opt.sizes[0]);
-            } else {
-              // ⭐ 음성으로 사이즈 들어온 경우 자동 반영
-              if (data.slots.size) {
-                const s = data.slots.size.toLowerCase();
-                if (s.includes("small") || s.includes("스몰") || s.includes("작"))
-                  setSelectedSize("Small");
-                else if (s.includes("large") || s.includes("라지") || s.includes("큰"))
-                  setSelectedSize("Large");
-              }
-            }
-
-          });
-      }
-    }
-
-
-
-
-    if (data.intent === "OptionSelect") {
-      const { temperature, size } = data.slots;
-
-      // ⚠ 서버가 '제공되지 않아요'라고 말한 경우 → 선택 초기화
-      if (data.ai_text.includes("제공되지 않아요")) {
-        setSelectedTemp(null);
-        setSelectedSize(null);
-        return;
-      }
-
-      // 🔥 온도 정규화 후 적용
-      if (temperature) {
-        let normalizedTemp = null;
-        const t = temperature.toLowerCase();
-
-        if (t.includes("ice")) normalizedTemp = "Iced";
-        else if (t.includes("hot") || t.includes("뜨") || t.includes("핫")) normalizedTemp = "Hot";
-
-        if (normalizedTemp) {
-          setSelectedTemp(normalizedTemp);
+        // 🔥 온도 자동 선택
+        if (opt.temperatures?.length === 1) {
+          setSelectedTemp(opt.temperatures[0]);
+        } else if (data.slots.temperature) {
+          const t = data.slots.temperature.toLowerCase();
+          if (t.includes("ice")) setSelectedTemp("Iced");
+          else if (t.includes("hot") || t.includes("뜨") || t.includes("핫"))
+            setSelectedTemp("Hot");
         }
-      }
 
-      // 🔥 사이즈 정규화 후 적용
-      if (size) {
-        let normalizedSize = null;
-        const s = size.toLowerCase();
-
-        if (s.includes("small") || s.includes("스몰")) normalizedSize = "Small";
-        else if (s.includes("large") || s.includes("라지")) normalizedSize = "Large";
-
-        if (normalizedSize) {
-          setSelectedSize(normalizedSize);
+        // 🔥 사이즈 자동 선택
+        if (opt.sizes?.length === 1) {
+          setSelectedSize(opt.sizes[0]);
+        } else if (data.slots.size) {
+          const s = data.slots.size.toLowerCase();
+          if (s.includes("small") || s.includes("스몰") || s.includes("작"))
+            setSelectedSize("Small");
+          else if (s.includes("large") || s.includes("라지") || s.includes("큰"))
+            setSelectedSize("Large");
         }
-      }
-    }
+
+        // ⭐⭐⭐ 추가 옵션 자동 선택 (커피 카테고리만)
+        if (activeCategory === "커피" && data.slots.option_strength) {
+          const optText = data.slots.option_strength.toLowerCase();
+
+          if (optText.includes("연")) setSelectedOption("연하게");
+          else if (optText.includes("기본")) setSelectedOption("기본");
+          else if (optText.includes("진")) setSelectedOption("진하게");
+        }
+      });
+  }
+
+  return; // 기존 기능 그대로 유지
+}
+
+
+
+
+
+if (data.intent === "OptionSelect") {
+  const { temperature, size, option_strength } = data.slots;
+
+  // ⚠ 서버가 '제공되지 않아요'라고 말한 경우 → 선택 초기화
+  if (data.ai_text.includes("제공되지 않아요")) {
+    setSelectedTemp(null);
+    setSelectedSize(null);
+    setSelectedOption(null);
+    return;
+  }
+
+  // 🔥 온도 정규화 후 적용
+  if (temperature) {
+    let normalizedTemp = null;
+    const t = temperature.toLowerCase();
+
+    if (t.includes("ice")) normalizedTemp = "Iced";
+    else if (t.includes("hot") || t.includes("뜨") || t.includes("핫")) normalizedTemp = "Hot";
+
+    if (normalizedTemp) setSelectedTemp(normalizedTemp);
+  }
+
+  // 🔥 사이즈 정규화 후 적용
+  if (size) {
+    let normalizedSize = null;
+    const s = size.toLowerCase();
+
+    if (s.includes("small") || s.includes("스몰")) normalizedSize = "Small";
+    else if (s.includes("large") || s.includes("라지")) normalizedSize = "Large";
+
+    if (normalizedSize) setSelectedSize(normalizedSize);
+  }
+
+  // ⭐⭐⭐ 추가 옵션 자동 선택
+  if (option_strength) {
+    const o = option_strength.toLowerCase();
+
+    if (o.includes("연")) setSelectedOption("연하게");
+    else if (o.includes("기본")) setSelectedOption("기본");
+    else if (o.includes("진")) setSelectedOption("진하게");
+  }
+}
 
     // 🔥 영양 정보 질의 → 옵션창 자동 열기 + 상세정보 자동 펼치기
     if (data.intent === "NutritionQuery" && data.slots?.menu_name) {
@@ -370,6 +381,7 @@ function MenuCoffee() {
           if (!exists) {
             grouped[item.category].push({
               name: item.name,
+              category: item.category,
               price: item.price,
               calories_kcal: item.calories_kcal,
               caffeine_mg: item.caffeine_mg,
@@ -491,6 +503,11 @@ function MenuCoffee() {
       setShowOptionWarning(true);
       return;
     }
+      // ⭐ 커피일 때 추가 옵션 필수 선택 검사
+  if (activeCategory === '커피' && !selectedOption) {
+    setShowOptionWarning(true);
+    return;
+  }
 
 
 
@@ -908,75 +925,80 @@ function MenuCoffee() {
             </p>
 
             {/* 옵션 선택: 빙수/베이커리/스낵 제외 */}
-            {!['빙수 · 아이스크림', '베이커리', '스낵'].includes(activeCategory) && (
-              <>
-                {/* 온도 */}
-                <div className="option-section">
-                  <p><strong>온도</strong></p>
-                  {availableTemps.includes('Hot') && (
-                    <button
-                      className={selectedTemp === 'Hot' ? 'active' : ''}
-                      onClick={() => setSelectedTemp('Hot')}
-                    >
-                      HOT
-                    </button>
-                  )}
-                  {availableTemps.includes('Iced') && (
-                    <button
-                      className={selectedTemp === 'Iced' ? 'active' : ''}
-                      onClick={() => setSelectedTemp('Iced')}
-                    >
-                      ICE
-                    </button>
-                  )}
-                </div>
+            {/* 옵션 선택: 빙수/베이커리/스낵 제외 */}
+{!['빙수 · 아이스크림', '베이커리', '스낵'].includes(activeCategory) && (
+  <>
+    {/* 온도 */}
+    <div className="option-section">
+      <p><strong>온도</strong></p>
+      {availableTemps.includes('Hot') && (
+        <button
+          className={selectedTemp === 'Hot' ? 'active' : ''}
+          onClick={() => setSelectedTemp('Hot')}
+        >
+          HOT
+        </button>
+      )}
+      {availableTemps.includes('Iced') && (
+        <button
+          className={selectedTemp === 'Iced' ? 'active' : ''}
+          onClick={() => setSelectedTemp('Iced')}
+        >
+          ICE
+        </button>
+      )}
+    </div>
 
-                {/* 사이즈 */}
-                <div className="option-section">
-                  <p><strong>사이즈</strong></p>
-                  {availableSizes.includes('Small') && (
-                    <button
-                      className={selectedSize === 'Small' ? 'active' : ''}
-                      onClick={() => setSelectedSize('Small')}
-                    >
-                      Small
-                    </button>
-                  )}
-                  {availableSizes.includes('Large') && (
-                    <button
-                      className={selectedSize === 'Large' ? 'active' : ''}
-                      onClick={() => setSelectedSize('Large')}
-                    >
-                      Large
-                    </button>
-                  )}
-                </div>
+    {/* 사이즈 */}
+    <div className="option-section">
+      <p><strong>사이즈</strong></p>
+      {availableSizes.includes('Small') && (
+        <button
+          className={selectedSize === 'Small' ? 'active' : ''}
+          onClick={() => setSelectedSize('Small')}
+        >
+          Small
+        </button>
+      )}
+      {availableSizes.includes('Large') && (
+        <button
+          className={selectedSize === 'Large' ? 'active' : ''}
+          onClick={() => setSelectedSize('Large')}
+        >
+          Large
+        </button>
+      )}
+    </div>
 
+    {/* 추가 옵션 - ⭐ 커피만 표시 */}
+{/* 추가 옵션 - ⭐ selectedMenu 기준으로 커피만 표시 */}
+{selectedMenu?.category === '커피' && (
+  <div className="option-section">
+    <p><strong>추가 옵션</strong></p>
+    <button
+      className={selectedOption === '연하게' ? 'active' : ''}
+      onClick={() => setSelectedOption('연하게')}
+    >
+      연하게
+    </button>
+    <button
+      className={selectedOption === '기본' ? 'active' : ''}
+      onClick={() => setSelectedOption('기본')}
+    >
+      기본
+    </button>
+    <button
+      className={selectedOption === '진하게' ? 'active' : ''}
+      onClick={() => setSelectedOption('진하게')}
+    >
+      진하게
+    </button>
+  </div>
+)}
 
-                {/* 추가 옵션 */}
-                <div className="option-section">
-                  <p><strong>추가 옵션</strong></p>
-                  <button
-                    className={selectedOption === '연하게' ? 'active' : ''}
-                    onClick={() => setSelectedOption('연하게')}
-                  >
-                    연하게
-                  </button>
-                  <button
-                    className={selectedOption === '기본' ? 'active' : ''}
-                    onClick={() => setSelectedOption('기본')}
-                  >
-                    기본
-                  </button>
-                  <button
-                    className={selectedOption === '진하게' ? 'active' : ''}
-                    onClick={() => setSelectedOption('진하게')}
-                  >
-                    진하게
-                  </button>
-                </div>
-              </>
-            )}
+  </>
+)}
+
 
             {/* 상세정보 보기 */}
             <div className="option-section">

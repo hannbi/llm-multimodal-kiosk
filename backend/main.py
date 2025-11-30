@@ -42,8 +42,13 @@ app.add_middleware(
 
 
 def normalize_temperature(t):
-    if not t:
+    if t is None:
         return None
+    
+    if isinstance(t, int):
+        # 0을 Hot, 1을 Iced 로 가정
+        return "Hot" if t == 0 else "Iced"
+
     t = t.lower()
 
     # Hot 인식
@@ -587,68 +592,80 @@ def process_intent(intent, slots):
     # --------------------
     # 1) BuildOrder
     # --------------------
+# --------------------
+# 1) BuildOrder
+# --------------------
     if intent == "BuildOrder":
         name = slots.get("menu_name")
-        if not name:  # 🔥 메뉴 이름이 None일 때 처리
+        if not name:
             return "어떤 메뉴를 원하시는지 말씀해주세요."
+
         qty = slots.get("quantity", 1)
         temp = normalize_temperature(slots.get("temperature"))
         size = normalize_size(slots.get("size"))
-
+        strength = slots.get("option_strength")   # ⭐ 추가됨 (연하게/기본/진하게)
 
         menu = db_get_menu(name)
         if not menu:
             return f"{name}는 없는 메뉴예요."
 
-    # 실제 존재하는 옵션 목록
         valid_temps = [normalize_temperature(t) for t in menu["temperatures"]]
         valid_sizes = [normalize_size(s) for s in menu["sizes"]]
-        
+
         if temp and temp not in valid_temps:
             temp = None
-
         if size and size not in valid_sizes:
             size = None
-    # 🔥 pending 저장
+
+    # ⭐ pending에 옵션 전부 저장
         pending = {"name": name, "qty": qty}
         if temp:
             pending["temperature"] = temp
         if size:
             pending["size"] = size
+        if strength:
+            pending["strength"] = strength   # ⭐ 추가됨
 
         state["last_menu"] = name
         state["pending"] = pending
 
-    # 🔥 3) 존재 가능한 옵션 기반 응답 로직
-    #   temp + size 둘 다 완성됨
-        if temp and size:
+        has_temp = "temperature" in pending
+        has_size = "size" in pending
+        has_strength = "strength" in pending   # ⭐ 추가됨
+
+    # ⭐⭐⭐ temp + size + strength → 모두 선택됨
+        if has_temp and has_size and has_strength:
             return "선택이 완료되었어요. 담을까요?"
 
-    #   온도 필요하고 temp 없음
-        if len(valid_temps) > 1 and not temp:
+    # 기존 메시지 그대로 유지
+        if len(valid_temps) > 1 and not has_temp:
             return "원하시는 온도를 말씀해주세요."
-
-    #   사이즈 필요하고 size 없음
-        if len(valid_sizes) > 1 and not size:
+        if len(valid_sizes) > 1 and not has_size:
             return "사이즈를 말씀해주세요."
+    
+        category = menu.get("category", "")
+        is_coffee = category == "커피"
 
-    #   온도는 하나뿐이고 자동 결정 (예: Hot만 존재)
-        if len(valid_temps) == 1 and not temp:
+# 커피 메뉴일 경우만 strength를 물어본다
+        if len(valid_temps) == 1 and not has_temp:
             pending["temperature"] = valid_temps[0]
-            
-            if len(valid_sizes) <= 1:
-                if len(valid_sizes) == 1:
-                    pending["size"] = valid_sizes[0]
-                return "선택지가 하나뿐이라 자동으로 선택됐어요. 담을까요?"
-            return "온도는 자동으로 선택됐어요. 사이즈를 말씀해주세요."
+            state["pending"] = pending
+            return f"{name}은(는) 온도가 {valid_temps[0]} 하나뿐이라 자동으로 선택했어요."
 
-
-    #   사이즈도 하나만 존재할 때
-        if len(valid_sizes) == 1 and not size:
+# 사이즈 1개 자동 선택 멘트
+        if len(valid_sizes) == 1 and not has_size:
             pending["size"] = valid_sizes[0]
-            if "temperature" in pending:
-                return "선택지가 하나뿐이라 자동으로 선택됐어요. 담을까요?"
-            return "사이즈는 자동으로 선택됐어요. 온도를 말씀해주세요."
+            state["pending"] = pending
+            return f"{name}은(는) 사이즈가 {valid_sizes[0]} 하나뿐이라 자동으로 선택했어요."
+
+# 커피는 strength 필요
+        if is_coffee:
+            if not has_strength:
+                return "연하게, 기본, 진하게 중에서 선택해주세요."
+        else:
+    # ☕ 커피가 아닐 경우 strength 필요 없음 → 옵션 완료 판정
+            if has_temp and has_size:
+                return "선택이 완료되었어요. 담을까요?"
 
     # --------------------
     # 2) OptionSelect
@@ -656,7 +673,7 @@ def process_intent(intent, slots):
     if intent == "OptionSelect":
         temp = normalize_temperature(slots.get("temperature"))
         size = normalize_size(slots.get("size"))
-
+        strength = slots.get("option_strength")   # ⭐ 추가됨
 
         if not state.get("last_menu"):
             return "어떤 음료에 옵션을 적용할까요?"
@@ -664,36 +681,53 @@ def process_intent(intent, slots):
         pending = state["pending"]
         name = pending["name"]
 
-    # 🔥 실제 메뉴 옵션 불러오기
         menu = db_get_menu(name)
-        valid_temps = [normalize_temperature(t) for t in menu["temperatures"]]  # 예: ['Hot']
-        valid_sizes = [normalize_size(s) for s in menu["sizes"]]           # 예: ['Small','Large'] 또는 ['Hot']
+        valid_temps = [normalize_temperature(t) for t in menu["temperatures"]]
+        valid_sizes = [normalize_size(s) for s in menu["sizes"]]
+        if len(valid_temps) == 1 and "temperature" not in pending:
+            pending["temperature"] = valid_temps[0]
 
-# 🔥 온도 검증
+    # 🔥 사이즈가 1개뿐이면 자동 적용
+        if len(valid_sizes) == 1 and "size" not in pending:
+            pending["size"] = valid_sizes[0]
         if temp:
             if temp not in valid_temps:
-                return f"{name}는 {temp}로 제공되지 않아요. 가능한 온도는 {', '.join(valid_temps)} 입니다."
+                return f"{name}는 {temp}로 제공되지 않아요."
             pending["temperature"] = temp
 
-# 🔥 사이즈 검증
         if size:
             if size not in valid_sizes:
-                return f"{name}는 {size} 사이즈가 없어요. 가능한 사이즈는 {', '.join(valid_sizes)} 입니다."
+                return f"{name}는 {size} 사이즈가 없어요."
             pending["size"] = size
+
+        if strength:
+            pending["strength"] = strength    # ⭐ 추가됨
 
         has_temp = "temperature" in pending
         has_size = "size" in pending
+        has_strength = "strength" in pending  # ⭐ 추가됨
 
-        if has_temp and has_size:
+    # ⭐⭐⭐ 모든 옵션 선택됨
+        if has_temp and has_size and has_strength:
             return "선택이 완료되었어요. 담을까요?"
 
-        if has_temp and not has_size:
-            return f"{pending['temperature']} 선택되었어요. 사이즈도 말씀해주세요."
+        if not has_temp:
+            return "원하시는 온도를 말씀해주세요."
 
-        if has_size and not has_temp:
-            return f"{pending['size']} 선택되었어요. 온도도 말씀해주세요."
+        if not has_size:
+            return "사이즈도 말씀해주세요."
 
-        return "원하시는 옵션을 말씀해주세요."
+# strength는 커피만
+        category = menu.get("category", "")
+        is_coffee = category == "커피"
+        if is_coffee:
+            if not has_strength:
+                return "연하게, 기본, 진하게 중에서 골라주세요."
+        else:
+    # 커피가 아니면 strength 필요 없음 → temp+size 선택 완료 시 종료
+            if has_temp and has_size:
+                return "선택이 완료되었어요. 담을까요?"
+
 
     # --------------------
 # NutritionQuery
@@ -854,7 +888,8 @@ def process_intent(intent, slots):
             "name": name,
             "qty": qty,
             "temperature": temp,
-            "size": size
+            "size": size,
+            "strength": pending.get("strength")
         })
 
         state["pending"] = {}
@@ -910,6 +945,7 @@ def db_get_menu(name):
     cur.execute("""
         SELECT 
             MenuItem.name,
+            MenuItem.category,
             Product.price,
             Product.temperature_type,
             Product.size
@@ -924,12 +960,14 @@ def db_get_menu(name):
     if not rows:
         return None
 
-    temperatures = set(r[2] for r in rows)
-    sizes = set(r[3] for r in rows)
+    temperatures = set(r[3] for r in rows)   # Product.temperature_type
+    sizes = set(r[4] for r in rows)          # Product.size
+
 
     return {
         "name": name,
-        "price": rows[0][1],
+        "category": rows[0][1], 
+        "price": rows[0][2],
         "need_temp": len(temperatures) > 1,
         "need_size": len(sizes) > 1,
         "temperatures": list(temperatures),

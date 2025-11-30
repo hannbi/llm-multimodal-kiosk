@@ -38,6 +38,49 @@ def get_gpt_response(user_text: str):
 - 사용자가 옵션(HOT/ICE/Small/Large)만 말한 경우 OptionSelect 로 분류한다.
 - 사용자가 처음부터 옵션까지 말하면 slots 안에 menu_name + size + temperature 모두 넣는다.
 
+추가옵션(연하게, 기본, 진하게)은 커피 메뉴에만 적용됩니다.
+커피가 아닌 메뉴(주스, 스무디, 에이드 등)에서는 option_strength 슬롯을 절대 넣지 않습니다.
+
+
+# 추가옵션(연하게/기본/진하게) 규칙
+
+아래 단어가 포함되면 OptionSelect 로 분류하고,
+slots.option_strength 에 다음 값 중 하나를 넣는다:
+
+- "연하게", "연한", "연" → "연하게"
+- "기본", "보통" → "기본"
+- "진하게", "진한", "진" → "진하게"
+
+이때 menu_name 은 절대 넣지 않는다.
+온도/사이즈와 동일하게 옵션만 slots 에 포함한다.
+
+사용자가 메뉴와 함께 연하게/기본/진하게 같은 추가옵션을 말하면
+slots.option_strength 도 반드시 포함한다.
+
+예:
+"아이스 아메리카노 라지 연하게 하나"
+→ {
+    "intent": "BuildOrder",
+    "slots": {
+        "menu_name": "아메리카노",
+        "quantity": 1,
+        "temperature": "Iced",
+        "size": "Large",
+        "option_strength": "연하게"
+    }
+}
+
+# 추가 규칙 (중요)
+사용자가 "연하게", "기본", "진하게"처럼 추가옵션만 말한 경우:
+
+- 이미 이전에 menu_name 이 선택되어 있고(last_menu 존재)
+- 해당 메뉴가 온도/사이즈가 하나뿐이면
+
+intent는 OptionSelect 로 설정하고
+slots.option_strength 만 넣는다.
+
+이때 slots.temperature 또는 slots.size 는 넣지 않는다.
+
 
 # 인사말 분류 규칙 (엄격 적용)
 
