@@ -74,11 +74,12 @@ function MenuOrder() {
                     <div className="order-item-name">{item.name}</div>
 
                     <div className="order-item-option">
-                      {item.temp} / {item.size}
-                      {item.option && ` / ${item.option}`}
+                      {[item.temp, item.size, item.option]
+                        .filter(Boolean)  // ✅ 값이 있는 것만 필터링
+                        .join(" / ")}     {/* ✅ " / "로 연결 */}
                     </div>
                   </div>
-
+                  
                   {/* 수량 */}
                   <div className="menu-qty">
                     <button>-</button>

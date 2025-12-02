@@ -58,6 +58,17 @@ function MenuCoffee() {
   const location = useLocation();
   const [smartRecommendData, setSmartRecommendData] = useState([]);
 
+  // 기존 state들 아래에 추가
+  const [showSmartFilterModal, setShowSmartFilterModal] = useState(false);
+  const [smartFilters, setSmartFilters] = useState({
+    calories: '전체',
+    caffeine: '전체',
+    sugar: '전체',
+    sodium: '전체',
+    protein: '전체'
+  });
+  const [filterResultText, setFilterResultText] = useState('');
+
   // 1️⃣ sendVoice 밖
   const requestSmartRecommend = async (nutrient, compare) => {
     const res = await fetch(`http://localhost:5000/recommend?nutrient=${nutrient}&compare=${compare}`);
@@ -72,226 +83,323 @@ function MenuCoffee() {
     }, 50);
   };
 
+  // 🔥 새로운 필터링 함수
+  const applySmartFilter = async () => {
+    const params = new URLSearchParams();
 
-const sendVoice = async (blob) => {
-  const formData = new FormData();
-  formData.append("file", blob, "audio.webm");
+    // 칼로리
+    if (smartFilters.calories === '낮음') {
+      params.append('calories_min', 0);
+      params.append('calories_max', 130);
+    } else if (smartFilters.calories === '높음') {
+      params.append('calories_min', 220);
+    }
 
-  const res = await fetch("http://localhost:5000/voice", {
-    method: "POST",
-    body: formData,
-  });
+    // 카페인
+    if (smartFilters.caffeine === '없음') {
+      params.append('caffeine_min', 0);
+      params.append('caffeine_max', 0);
+    } else if (smartFilters.caffeine === '적음') {
+      params.append('caffeine_min', 1);
+      params.append('caffeine_max', 100);
+    } else if (smartFilters.caffeine === '많음') {
+      params.append('caffeine_min', 150);
+    }
 
-  const data = await res.json();
+    // 당류
+    if (smartFilters.sugar === '없음') {
+      params.append('sugar_min', 0);
+      params.append('sugar_max', 5);
+    } else if (smartFilters.sugar === '적음') {
+      params.append('sugar_min', 5);
+      params.append('sugar_max', 25);
+    } else if (smartFilters.sugar === '많음') {
+      params.append('sugar_min', 50);
+    }
 
-  setAiText(data.ai_text);
+    // 나트륨
+    if (smartFilters.sodium === '없음') {
+      params.append('sodium_min', 0);
+      params.append('sodium_max', 50);
+    } else if (smartFilters.sodium === '적음') {
+      params.append('sodium_min', 50);
+      params.append('sodium_max', 100);
+    } else if (smartFilters.sodium === '많음') {
+      params.append('sodium_min', 200);
+    }
 
-  // 🔥 menuData가 로딩되지 않았다면 모달 띄우기 중단
-  if (!menuData || Object.keys(menuData).length === 0) {
-    console.log("⚠ menuData 아직 로딩 안됨");
-    return;
-  }
+    // 단백질
+    if (smartFilters.protein === '없음') {
+      params.append('protein_min', 0);
+      params.append('protein_max', 2);
+    } else if (smartFilters.protein === '적음') {
+      params.append('protein_min', 2);
+      params.append('protein_max', 10);
+    } else if (smartFilters.protein === '많음') {
+      params.append('protein_min', 10);
+    }
 
-  // ----------------------------
-  //  try 내부에서 모든 intent 처리
-  // ----------------------------
-  try {
+    // 서버에 요청
+    const res = await fetch(`http://localhost:5000/smart_filter?${params.toString()}`);
+    const data = await res.json();
 
-    // 🔥 음성으로 카테고리 변경
-    if (data.intent === "ChangeCategory" && data.slots?.category) {
-      const category = data.slots.category;
+    setSmartRecommendData(data.recommend || []);
+    setFilterResultText(generateFilterText());
+    setActiveCategory("스마트추천");
+    setShowSmartFilterModal(false);
 
-      const mapping = {
-        "커피": "커피",
-        "티/에이드": "티/에이드",
-        "주스/라떼": "주스/라떼",
-        "쉐이크/스무디": "쉐이크/스무디",
-        "빙수/아이스크림": "빙수/아이스크림",
-        "빵/케이크": "빵/케이크",
-        "스낵": "스낵",
-      };
+    setTimeout(() => {
+      const scrollArea = document.querySelector(".menu-scroll-area");
+      if (scrollArea) scrollArea.scrollTop = 0;
+    }, 50);
+  };
 
-      const normalized = mapping[category];
+  // 🔥 필터 설명 텍스트 생성
+  const generateFilterText = () => {
+    const conditions = [];
 
-      if (normalized && menuData[normalized]) {
-        setActiveCategory(normalized);
-        setAiText(`${normalized} 화면입니다.`);
+    if (smartFilters.calories !== '전체') {
+      conditions.push(`칼로리 ${smartFilters.calories}`);
+    }
+    if (smartFilters.caffeine !== '전체') {
+      conditions.push(`카페인 ${smartFilters.caffeine}`);
+    }
+    if (smartFilters.sugar !== '전체') {
+      conditions.push(`당류 ${smartFilters.sugar}`);
+    }
+    if (smartFilters.sodium !== '전체') {
+      conditions.push(`나트륨 ${smartFilters.sodium}`);
+    }
+    if (smartFilters.protein !== '전체') {
+      conditions.push(`단백질 ${smartFilters.protein}`);
+    }
 
-        setTimeout(() => {
-          const scrollArea = document.querySelector('.menu-scroll-area');
-          if (scrollArea) scrollArea.scrollTop = 0;
-        }, 50);
-      }
+    if (conditions.length === 0) {
+      return "전체 메뉴입니다";
+    }
 
+    return conditions.join(', ') + " 메뉴들입니다";
+  };
+
+  const sendVoice = async (blob) => {
+    const formData = new FormData();
+    formData.append("file", blob, "audio.webm");
+
+    const res = await fetch("http://localhost:5000/voice", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    setAiText(data.ai_text);
+
+    // 🔥 menuData가 로딩되지 않았다면 모달 띄우기 중단
+    if (!menuData || Object.keys(menuData).length === 0) {
+      console.log("⚠ menuData 아직 로딩 안됨");
       return;
     }
 
-    // 🔥 스마트추천 intent
-    if (data.intent === "SmartRecommend" && data.recommend) {
-      setActiveCategory("스마트추천");
-      setSmartRecommendData(data.recommend);
-      setAiText(data.ai_text);
+    // ----------------------------
+    //  try 내부에서 모든 intent 처리
+    // ----------------------------
+    try {
 
-      setTimeout(() => {
-        const scrollArea = document.querySelector(".menu-scroll-area");
-        if (scrollArea) scrollArea.scrollTop = 0;
-      }, 50);
+      // 🔥 음성으로 카테고리 변경
+      if (data.intent === "ChangeCategory" && data.slots?.category) {
+        const category = data.slots.category;
 
-      return;
-    }
+        const mapping = {
+          "커피": "커피",
+          "티/에이드": "티/에이드",
+          "주스/라떼": "주스/라떼",
+          "쉐이크/스무디": "쉐이크/스무디",
+          "빙수/아이스크림": "빙수/아이스크림",
+          "빵/케이크": "빵/케이크",
+          "스낵": "스낵",
+        };
 
-    // 🔥 BuildOrder → 옵션 모달 자동 오픈
-    if (data.intent === "BuildOrder" && data.slots?.menu_name) {
-      const menuName = data.slots.menu_name;
+        const normalized = mapping[category];
 
-      const foundMenu = Object.values(menuData)
-        .flat()
-        .find((m) => m.name === menuName);
+        if (normalized && menuData[normalized]) {
+          setActiveCategory(normalized);
+          setAiText(`${normalized} 화면입니다.`);
 
-      if (foundMenu) {
-        setSelectedMenu(foundMenu);
-        setShowModal(true);
+          setTimeout(() => {
+            const scrollArea = document.querySelector('.menu-scroll-area');
+            if (scrollArea) scrollArea.scrollTop = 0;
+          }, 50);
+        }
 
-        fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
-          .then((res) => res.json())
-          .then((opt) => {
-            setAvailableSizes(opt.sizes || []);
-            setAvailableTemps(opt.temperatures || []);
-
-            // 온도 자동 선택
-            if (opt.temperatures?.length === 1) {
-              setSelectedTemp(opt.temperatures[0]);
-            } else if (data.slots.temperature) {
-              const t = data.slots.temperature.toLowerCase();
-              if (t.includes("ice")) setSelectedTemp("Iced");
-              else if (t.includes("hot") || t.includes("뜨") || t.includes("핫"))
-                setSelectedTemp("Hot");
-            }
-
-            // 사이즈 자동 선택
-            if (opt.sizes?.length === 1) {
-              setSelectedSize(opt.sizes[0]);
-            } else if (data.slots.size) {
-              const s = data.slots.size.toLowerCase();
-              if (s.includes("small") || s.includes("스몰") || s.includes("작"))
-                setSelectedSize("Small");
-              else if (s.includes("large") || s.includes("라지") || s.includes("큰"))
-                setSelectedSize("Large");
-            }
-
-            // 커피 옵션 자동 선택
-            if (activeCategory === "커피" && data.slots.option_strength) {
-              const optText = data.slots.option_strength.toLowerCase();
-              if (optText.includes("연")) setSelectedOption("연하게");
-              else if (optText.includes("기본")) setSelectedOption("기본");
-              else if (optText.includes("진")) setSelectedOption("진하게");
-            }
-          });
-      }
-
-      return;
-    }
-
-    // 🔥 OptionSelect
-    if (data.intent === "OptionSelect") {
-      const { temperature, size, option_strength } = data.slots;
-
-      if (data.ai_text.includes("제공되지 않아요")) {
-        setSelectedTemp(null);
-        setSelectedSize(null);
-        setSelectedOption(null);
         return;
       }
 
-      if (temperature) {
-        let normalizedTemp = null;
-        const t = temperature.toLowerCase();
-        if (t.includes("ice")) normalizedTemp = "Iced";
-        else if (t.includes("hot") || t.includes("뜨") || t.includes("핫"))
-          normalizedTemp = "Hot";
-        if (normalizedTemp) setSelectedTemp(normalizedTemp);
+      // 🔥 스마트추천 intent
+      if (data.intent === "SmartRecommend" && data.recommend) {
+        setActiveCategory("스마트추천");
+        setSmartRecommendData(data.recommend);
+        setAiText(data.ai_text);
+
+        setTimeout(() => {
+          const scrollArea = document.querySelector(".menu-scroll-area");
+          if (scrollArea) scrollArea.scrollTop = 0;
+        }, 50);
+
+        return;
       }
 
-      if (size) {
-        let normalizedSize = null;
-        const s = size.toLowerCase();
-        if (s.includes("small") || s.includes("스몰")) normalizedSize = "Small";
-        else if (s.includes("large") || s.includes("라지")) normalizedSize = "Large";
-        if (normalizedSize) setSelectedSize(normalizedSize);
+      // 🔥 BuildOrder → 옵션 모달 자동 오픈
+      if (data.intent === "BuildOrder" && data.slots?.menu_name) {
+        const menuName = data.slots.menu_name;
+
+        const foundMenu = Object.values(menuData)
+          .flat()
+          .find((m) => m.name === menuName);
+
+        if (foundMenu) {
+          setSelectedMenu(foundMenu);
+          setShowModal(true);
+
+          fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
+            .then((res) => res.json())
+            .then((opt) => {
+              setAvailableSizes(opt.sizes || []);
+              setAvailableTemps(opt.temperatures || []);
+
+              // 온도 자동 선택
+              if (opt.temperatures?.length === 1) {
+                setSelectedTemp(opt.temperatures[0]);
+              } else if (data.slots.temperature) {
+                const t = data.slots.temperature.toLowerCase();
+                if (t.includes("ice")) setSelectedTemp("Iced");
+                else if (t.includes("hot") || t.includes("뜨") || t.includes("핫"))
+                  setSelectedTemp("Hot");
+              }
+
+              // 사이즈 자동 선택
+              if (opt.sizes?.length === 1) {
+                setSelectedSize(opt.sizes[0]);
+              } else if (data.slots.size) {
+                const s = data.slots.size.toLowerCase();
+                if (s.includes("small") || s.includes("스몰") || s.includes("작"))
+                  setSelectedSize("Small");
+                else if (s.includes("large") || s.includes("라지") || s.includes("큰"))
+                  setSelectedSize("Large");
+              }
+
+              // 커피 옵션 자동 선택
+              if (activeCategory === "커피" && data.slots.option_strength) {
+                const optText = data.slots.option_strength.toLowerCase();
+                if (optText.includes("연")) setSelectedOption("연하게");
+                else if (optText.includes("기본")) setSelectedOption("기본");
+                else if (optText.includes("진")) setSelectedOption("진하게");
+              }
+            });
+        }
+
+        return;
       }
 
-      if (option_strength) {
-        const o = option_strength.toLowerCase();
-        if (o.includes("연")) setSelectedOption("연하게");
-        else if (o.includes("기본")) setSelectedOption("기본");
-        else if (o.includes("진")) setSelectedOption("진하게");
+      // 🔥 OptionSelect
+      if (data.intent === "OptionSelect") {
+        const { temperature, size, option_strength } = data.slots;
+
+        if (data.ai_text.includes("제공되지 않아요")) {
+          setSelectedTemp(null);
+          setSelectedSize(null);
+          setSelectedOption(null);
+          return;
+        }
+
+        if (temperature) {
+          let normalizedTemp = null;
+          const t = temperature.toLowerCase();
+          if (t.includes("ice")) normalizedTemp = "Iced";
+          else if (t.includes("hot") || t.includes("뜨") || t.includes("핫"))
+            normalizedTemp = "Hot";
+          if (normalizedTemp) setSelectedTemp(normalizedTemp);
+        }
+
+        if (size) {
+          let normalizedSize = null;
+          const s = size.toLowerCase();
+          if (s.includes("small") || s.includes("스몰")) normalizedSize = "Small";
+          else if (s.includes("large") || s.includes("라지")) normalizedSize = "Large";
+          if (normalizedSize) setSelectedSize(normalizedSize);
+        }
+
+        if (option_strength) {
+          const o = option_strength.toLowerCase();
+          if (o.includes("연")) setSelectedOption("연하게");
+          else if (o.includes("기본")) setSelectedOption("기본");
+          else if (o.includes("진")) setSelectedOption("진하게");
+        }
       }
-    }
 
-    // 🔥 NutritionQuery → 옵션창 열기
-    if (data.intent === "NutritionQuery" && data.slots?.menu_name) {
-      const menuName = data.slots.menu_name;
+      // 🔥 NutritionQuery → 옵션창 열기
+      if (data.intent === "NutritionQuery" && data.slots?.menu_name) {
+        const menuName = data.slots.menu_name;
 
-      const foundMenu = Object.values(menuData)
-        .flat()
-        .find((m) => m.name === menuName);
+        const foundMenu = Object.values(menuData)
+          .flat()
+          .find((m) => m.name === menuName);
 
-      if (foundMenu) {
-        setSelectedMenu(foundMenu);
-        setShowModal(true);
-        setShowDetail(true);
+        if (foundMenu) {
+          setSelectedMenu(foundMenu);
+          setShowModal(true);
+          setShowDetail(true);
 
+          setSelectedTemp(null);
+          setSelectedSize(null);
+          setSelectedOption(null);
+
+          fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
+            .then((res) => res.json())
+            .then((opt) => {
+              setAvailableSizes(opt.sizes || []);
+              setAvailableTemps(opt.temperatures || []);
+
+              if (opt.temperatures?.length === 1) {
+                setSelectedTemp(opt.temperatures[0]);
+              }
+              if (opt.sizes?.length === 1) {
+                setSelectedSize(opt.sizes[0]);
+              }
+            });
+        }
+      }
+
+      // 🔥 AddToCart
+      if (data.intent === "AddToCart") {
+        handleAddToCart();
+        setShowModal(false);
         setSelectedTemp(null);
         setSelectedSize(null);
         setSelectedOption(null);
+      }
 
-        fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
-          .then((res) => res.json())
-          .then((opt) => {
-            setAvailableSizes(opt.sizes || []);
-            setAvailableTemps(opt.temperatures || []);
+      // 🔥 Payment → 다음 페이지 이동
+      if (data.intent === "Payment" || data.next_action === "go_payment") {
+        const totalPrice = cartItems.reduce(
+          (sum, item) => sum + item.price * item.qty,
+          0
+        );
 
-            if (opt.temperatures?.length === 1) {
-              setSelectedTemp(opt.temperatures[0]);
-            }
-            if (opt.sizes?.length === 1) {
-              setSelectedSize(opt.sizes[0]);
-            }
-          });
+        navigate("/order_voice", {
+          state: { cartItems, totalPrice },
+        });
+      }
+
+    } finally {
+      // ----------------------------
+      // ✔ 반드시 음성 재생 — 어떤 intent라도
+      // ----------------------------
+      if (data.audio_url) {
+        const audio = new Audio("http://localhost:5000/" + data.audio_url);
+        audio.play().catch(err => console.error("음성 재생 오류:", err));
       }
     }
-
-    // 🔥 AddToCart
-    if (data.intent === "AddToCart") {
-      handleAddToCart();
-      setShowModal(false);
-      setSelectedTemp(null);
-      setSelectedSize(null);
-      setSelectedOption(null);
-    }
-
-    // 🔥 Payment → 다음 페이지 이동
-    if (data.intent === "Payment" || data.next_action === "go_payment") {
-      const totalPrice = cartItems.reduce(
-        (sum, item) => sum + item.price * item.qty,
-        0
-      );
-
-      navigate("/order_voice", {
-        state: { cartItems, totalPrice },
-      });
-    }
-
-  } finally {
-    // ----------------------------
-    // ✔ 반드시 음성 재생 — 어떤 intent라도
-    // ----------------------------
-    if (data.audio_url) {
-      const audio = new Audio("http://localhost:5000/" + data.audio_url);
-      audio.play().catch(err => console.error("음성 재생 오류:", err));
-    }
-  }
-};
+  };
 
 
 
@@ -479,11 +587,11 @@ const sendVoice = async (blob) => {
       setShowOptionWarning(true);
       return;
     }
-      // ⭐ 커피일 때 추가 옵션 필수 선택 검사
-  if (activeCategory === '커피' && !selectedOption) {
-    setShowOptionWarning(true);
-    return;
-  }
+    // ⭐ 커피일 때 추가 옵션 필수 선택 검사
+    if (activeCategory === '커피' && !selectedOption) {
+      setShowOptionWarning(true);
+      return;
+    }
 
 
 
@@ -594,14 +702,19 @@ const sendVoice = async (blob) => {
             key="스마트추천"
             className={activeCategory === "스마트추천" ? "active" : ""}
             onClick={() => {
-              setActiveCategory("스마트추천");
-              setSmartRecommendData([]);   // ⭐ 추천 목록 초기화
-
-              const scrollArea = document.querySelector(".menu-scroll-area");
-              if (scrollArea) scrollArea.scrollTop = 0;
+              // 🔥 터치모드일 때만 모달 열기
+              if (isTouchMode) {
+                setShowSmartFilterModal(true);
+              } else {
+                // 음성모드는 기존대로
+                setActiveCategory("스마트추천");
+                setSmartRecommendData([]);
+                const scrollArea = document.querySelector(".menu-scroll-area");
+                if (scrollArea) scrollArea.scrollTop = 0;
+              }
             }}
           >
-            스마트추천
+            ★ 스마트추천
           </li>
         </ul>
       </aside>
@@ -618,47 +731,56 @@ const sendVoice = async (blob) => {
             {activeCategory === "스마트추천" ? (
               <div style={{ width: "105%" }}>
 
-                {/* 🔥 스마트추천 버튼 — menu-grid 밖으로 꺼냄 */}
-                <div
-                  className="smart-filter-area"
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
-                    gap: "12px",
-                    marginBottom: "25px",
-                    maxWidth: "900px",
-                    marginLeft: "auto",
-                    marginRight: "auto",
-                    textAlign: "center",
-                  }}
-                >
-                  {/* 기존 5개 */}
-                  <button className="smart-btn" onClick={() => requestSmartRecommend("calories_kcal", "min")}>칼로리 낮은 순</button>
-                  <button className="smart-btn" onClick={() => requestSmartRecommend("sugar_g", "min")}>당류 낮은 순</button>
-                  <button className="smart-btn" onClick={() => requestSmartRecommend("caffeine_mg", "min")}>카페인 낮은 순</button>
-                  <button className="smart-btn" onClick={() => requestSmartRecommend("sodium_mg", "min")}>나트륨 낮은 순</button>
-                  <button className="smart-btn" onClick={() => requestSmartRecommend("protein_g", "max")}>단백질 많은 순</button>
+                {/* 🔥 필터 결과 멘트 추가 */}
+                {filterResultText && (
+                  <div style={{
+                    textAlign: 'center',
+                    fontSize: '28px',
+                    fontWeight: 'bold',
+                    margin: '20px 0',
+                    color: '#3a3a58'
+                  }}>
+                    {filterResultText}
+                  </div>
+                )}
 
-                  {/* 높은 순 */}
-                  <button className="smart-btn" onClick={() => requestSmartRecommend("calories_kcal", "max")}>칼로리 높은 순</button>
-                  <button className="smart-btn" onClick={() => requestSmartRecommend("sugar_g", "max")}>당류 높은 순</button>
-                  <button className="smart-btn" onClick={() => requestSmartRecommend("caffeine_mg", "max")}>카페인 높은 순</button>
-                  <button className="smart-btn" onClick={() => requestSmartRecommend("sodium_mg", "max")}>나트륨 높은 순</button>
+                {/* 🔥 음성모드에서만 13개 버튼 표시 */}
+                {!isTouchMode && (
+                  <div
+                    className="smart-filter-area"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(4, 1fr)",
+                      gap: "12px",
+                      marginBottom: "25px",
+                      maxWidth: "900px",
+                      marginLeft: "auto",
+                      marginRight: "auto",
+                      textAlign: "center",
+                    }}
+                  >
+                    {/* 기존 13개 버튼들 */}
+                    <button className="smart-btn" onClick={() => requestSmartRecommend("calories_kcal", "min")}>칼로리 낮은 순</button>
+                    <button className="smart-btn" onClick={() => requestSmartRecommend("sugar_g", "min")}>당류 낮은 순</button>
+                    <button className="smart-btn" onClick={() => requestSmartRecommend("caffeine_mg", "min")}>카페인 낮은 순</button>
+                    <button className="smart-btn" onClick={() => requestSmartRecommend("sodium_mg", "min")}>나트륨 낮은 순</button>
+                    <button className="smart-btn" onClick={() => requestSmartRecommend("protein_g", "max")}>단백질 많은 순</button>
+                    <button className="smart-btn" onClick={() => requestSmartRecommend("calories_kcal", "max")}>칼로리 높은 순</button>
+                    <button className="smart-btn" onClick={() => requestSmartRecommend("sugar_g", "max")}>당류 높은 순</button>
+                    <button className="smart-btn" onClick={() => requestSmartRecommend("caffeine_mg", "max")}>카페인 높은 순</button>
+                    <button className="smart-btn" onClick={() => requestSmartRecommend("sodium_mg", "max")}>나트륨 높은 순</button>
+                    <button className="smart-btn" onClick={() => requestSmartRecommend("protein_g", "min")}>단백질 적은 순</button>
+                    <button className="smart-btn" onClick={() => requestSmartRecommend("price", "min")}>가격 낮은 순</button>
+                    <button className="smart-btn" onClick={() => requestSmartRecommend("price", "max")}>가격 높은 순</button>
+                    <button className="smart-btn" onClick={() => requestSmartRecommend("random", "any")}>랜덤 추천</button>
+                  </div>
+                )}
 
-                  {/* 반대 기준 */}
-                  <button className="smart-btn" onClick={() => requestSmartRecommend("protein_g", "min")}>단백질 적은 순</button>
-
-                  {/* 가격 */}
-                  <button className="smart-btn" onClick={() => requestSmartRecommend("price", "min")}>가격 낮은 순</button>
-                  <button className="smart-btn" onClick={() => requestSmartRecommend("price", "max")}>가격 높은 순</button>
-
-                  {/* 랜덤 */}
-                  <button className="smart-btn" onClick={() => requestSmartRecommend("random", "any")}>랜덤 추천</button>
-                </div>
-
-                {/* 🔥 추천 결과 출력 — menu-grid 안쪽 */}
+                {/* 🔥 추천 결과 출력 */}
                 {smartRecommendData.length === 0 ? (
-                  <p style={{ opacity: 0.7, textAlign: "center" }}>추천 기준을 선택하면 메뉴가 표시됩니다.</p>
+                  <p style={{ opacity: 0.7, textAlign: "center" }}>
+                    {isTouchMode ? "필터를 설정하면 메뉴가 표시됩니다." : "추천 기준을 선택하면 메뉴가 표시됩니다."}
+                  </p>
                 ) : (
                   <div className="menu-grid">
                     {smartRecommendData.map((item, i) => (
@@ -882,6 +1004,189 @@ const sendVoice = async (blob) => {
         </div>
       )}
 
+      {/* 🔥 스마트 필터 모달 */}
+      {showSmartFilterModal && (
+        <div className="modal-overlay">
+          <div className="smart-filter-modal">
+            <h3>스마트 추천 설정</h3>
+
+            {/* 칼로리 */}
+            <div className="filter-row">
+              <label>칼로리</label>
+              <div className="filter-buttons">
+                <button
+                  className={smartFilters.calories === '낮음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, calories: '낮음' })}
+                >
+                  낮음
+                </button>
+                <button
+                  className={smartFilters.calories === '전체' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, calories: '전체' })}
+                >
+                  전체
+                </button>
+                <button
+                  className={smartFilters.calories === '높음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, calories: '높음' })}
+                >
+                  높음
+                </button>
+              </div>
+            </div>
+
+            {/* 카페인 */}
+            <div className="filter-row">
+              <label>카페인</label>
+              <div className="filter-buttons">
+                <button
+                  className={smartFilters.caffeine === '없음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, caffeine: '없음' })}
+                >
+                  없음
+                </button>
+                <button
+                  className={smartFilters.caffeine === '적음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, caffeine: '적음' })}
+                >
+                  적음
+                </button>
+                <button
+                  className={smartFilters.caffeine === '전체' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, caffeine: '전체' })}
+                >
+                  전체
+                </button>
+                <button
+                  className={smartFilters.caffeine === '많음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, caffeine: '많음' })}
+                >
+                  많음
+                </button>
+              </div>
+            </div>
+
+            {/* 당류 */}
+            <div className="filter-row">
+              <label>당류</label>
+              <div className="filter-buttons">
+                <button
+                  className={smartFilters.sugar === '없음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, sugar: '없음' })}
+                >
+                  없음
+                </button>
+                <button
+                  className={smartFilters.sugar === '적음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, sugar: '적음' })}
+                >
+                  적음
+                </button>
+                <button
+                  className={smartFilters.sugar === '전체' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, sugar: '전체' })}
+                >
+                  전체
+                </button>
+                <button
+                  className={smartFilters.sugar === '많음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, sugar: '많음' })}
+                >
+                  많음
+                </button>
+              </div>
+            </div>
+
+            {/* 나트륨 */}
+            <div className="filter-row">
+              <label>나트륨</label>
+              <div className="filter-buttons">
+                <button
+                  className={smartFilters.sodium === '없음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, sodium: '없음' })}
+                >
+                  없음
+                </button>
+                <button
+                  className={smartFilters.sodium === '적음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, sodium: '적음' })}
+                >
+                  적음
+                </button>
+                <button
+                  className={smartFilters.sodium === '전체' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, sodium: '전체' })}
+                >
+                  전체
+                </button>
+                <button
+                  className={smartFilters.sodium === '많음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, sodium: '많음' })}
+                >
+                  많음
+                </button>
+              </div>
+            </div>
+
+            {/* 단백질 */}
+            <div className="filter-row">
+              <label>단백질</label>
+              <div className="filter-buttons">
+                <button
+                  className={smartFilters.protein === '없음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, protein: '없음' })}
+                >
+                  없음
+                </button>
+                <button
+                  className={smartFilters.protein === '적음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, protein: '적음' })}
+                >
+                  적음
+                </button>
+                <button
+                  className={smartFilters.protein === '전체' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, protein: '전체' })}
+                >
+                  전체
+                </button>
+                <button
+                  className={smartFilters.protein === '많음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, protein: '많음' })}
+                >
+                  많음
+                </button>
+              </div>
+            </div>
+
+            {/* 버튼 */}
+            <div className="modal-buttons">
+              <button
+                onClick={() => {
+                  setShowSmartFilterModal(false);
+                  // 필터 초기화
+                  setSmartFilters({
+                    calories: '전체',
+                    caffeine: '전체',
+                    sugar: '전체',
+                    sodium: '전체',
+                    protein: '전체'
+                  });
+                }}
+                className="cancel-btn"
+              >
+                취소
+              </button>
+              <button
+                onClick={applySmartFilter}
+                className="add-btn"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/*옵션 선택 모달*/}
       {showModal && (
         <div className="modal-overlay">
@@ -902,78 +1207,78 @@ const sendVoice = async (blob) => {
 
             {/* 옵션 선택: 빙수/베이커리/스낵 제외 */}
             {/* 옵션 선택: 빙수/베이커리/스낵 제외 */}
-{!['빙수 · 아이스크림', '베이커리', '스낵'].includes(activeCategory) && (
-  <>
-    {/* 온도 */}
-    <div className="option-section">
-      <p><strong>온도</strong></p>
-      {availableTemps.includes('Hot') && (
-        <button
-          className={selectedTemp === 'Hot' ? 'active' : ''}
-          onClick={() => setSelectedTemp('Hot')}
-        >
-          HOT
-        </button>
-      )}
-      {availableTemps.includes('Iced') && (
-        <button
-          className={selectedTemp === 'Iced' ? 'active' : ''}
-          onClick={() => setSelectedTemp('Iced')}
-        >
-          ICE
-        </button>
-      )}
-    </div>
+            {!['빙수 · 아이스크림', '베이커리', '스낵'].includes(activeCategory) && (
+              <>
+                {/* 온도 */}
+                <div className="option-section">
+                  <p><strong>온도</strong></p>
+                  {availableTemps.includes('Hot') && (
+                    <button
+                      className={selectedTemp === 'Hot' ? 'active' : ''}
+                      onClick={() => setSelectedTemp('Hot')}
+                    >
+                      HOT
+                    </button>
+                  )}
+                  {availableTemps.includes('Iced') && (
+                    <button
+                      className={selectedTemp === 'Iced' ? 'active' : ''}
+                      onClick={() => setSelectedTemp('Iced')}
+                    >
+                      ICE
+                    </button>
+                  )}
+                </div>
 
-    {/* 사이즈 */}
-    <div className="option-section">
-      <p><strong>사이즈</strong></p>
-      {availableSizes.includes('Small') && (
-        <button
-          className={selectedSize === 'Small' ? 'active' : ''}
-          onClick={() => setSelectedSize('Small')}
-        >
-          Small
-        </button>
-      )}
-      {availableSizes.includes('Large') && (
-        <button
-          className={selectedSize === 'Large' ? 'active' : ''}
-          onClick={() => setSelectedSize('Large')}
-        >
-          Large
-        </button>
-      )}
-    </div>
+                {/* 사이즈 */}
+                <div className="option-section">
+                  <p><strong>사이즈</strong></p>
+                  {availableSizes.includes('Small') && (
+                    <button
+                      className={selectedSize === 'Small' ? 'active' : ''}
+                      onClick={() => setSelectedSize('Small')}
+                    >
+                      Small
+                    </button>
+                  )}
+                  {availableSizes.includes('Large') && (
+                    <button
+                      className={selectedSize === 'Large' ? 'active' : ''}
+                      onClick={() => setSelectedSize('Large')}
+                    >
+                      Large
+                    </button>
+                  )}
+                </div>
 
-    {/* 추가 옵션 - ⭐ 커피만 표시 */}
-{/* 추가 옵션 - ⭐ selectedMenu 기준으로 커피만 표시 */}
-{selectedMenu?.category === '커피' && (
-  <div className="option-section">
-    <p><strong>추가 옵션</strong></p>
-    <button
-      className={selectedOption === '연하게' ? 'active' : ''}
-      onClick={() => setSelectedOption('연하게')}
-    >
-      연하게
-    </button>
-    <button
-      className={selectedOption === '기본' ? 'active' : ''}
-      onClick={() => setSelectedOption('기본')}
-    >
-      기본
-    </button>
-    <button
-      className={selectedOption === '진하게' ? 'active' : ''}
-      onClick={() => setSelectedOption('진하게')}
-    >
-      진하게
-    </button>
-  </div>
-)}
+                {/* 추가 옵션 - ⭐ 커피만 표시 */}
+                {/* 추가 옵션 - ⭐ selectedMenu 기준으로 커피만 표시 */}
+                {selectedMenu?.category === '커피' && (
+                  <div className="option-section">
+                    <p><strong>추가 옵션</strong></p>
+                    <button
+                      className={selectedOption === '연하게' ? 'active' : ''}
+                      onClick={() => setSelectedOption('연하게')}
+                    >
+                      연하게
+                    </button>
+                    <button
+                      className={selectedOption === '기본' ? 'active' : ''}
+                      onClick={() => setSelectedOption('기본')}
+                    >
+                      기본
+                    </button>
+                    <button
+                      className={selectedOption === '진하게' ? 'active' : ''}
+                      onClick={() => setSelectedOption('진하게')}
+                    >
+                      진하게
+                    </button>
+                  </div>
+                )}
 
-  </>
-)}
+              </>
+            )}
 
 
             {/* 상세정보 보기 */}
