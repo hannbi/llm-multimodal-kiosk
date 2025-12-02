@@ -87,6 +87,12 @@
   gap: 1rem;
   margin-top: 0;
 }
+.qty-controller span {
+  font-size: 1.5rem;     /* 숫자 크기 */
+  font-weight: 500;      /* 숫자 진하게 */
+  min-width: 22px;       /* 숫자가 흔들리지 않게 고정폭 */
+  text-align: center;
+}
 
 .qty-controller button {
   font-size: 1.5rem;
@@ -97,7 +103,7 @@
   position: absolute;
   top: 6px;
   right: 6px;
-  background: red;
+  background: #e82929;
   color: white;
   border: none;
   border-radius: 50%;
@@ -122,7 +128,6 @@
   text-align: left;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 
-  /* 🔥 추가해야 하는 부분 */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -138,7 +143,7 @@
 .summary-price {
   font-size: 2.5rem;
   font-weight: 900;
-  color: red;
+  color: #e82929;;
   margin-bottom: 1rem;
 }
 
@@ -183,7 +188,7 @@
   height: 100%;
   background: #2c2c3d;
   color: white;
-  padding: 2rem;
+  padding: 1.5rem;
   box-sizing: border-box;
 }
 
@@ -199,7 +204,7 @@
 
 .menu-sidebar li {
   margin: 4rem 0;
-  font-size: 1.4rem;
+  font-size:1.6rem;
   cursor: pointer;
 
 }
@@ -208,7 +213,9 @@
   font-weight: bold;
   background-color: #fff;
   color: #2c2c3d;
-  width: 100%;
+  width: calc(100% + 1rem);
+  margin-left: -0.5rem;        /* 왼쪽 여백 무시 */
+  margin-right: -0.5rem;       /* 오른쪽 여백 무시 */
   text-align: center;
   padding: 1rem 0;
   border-radius: 0;
@@ -279,7 +286,7 @@
 }
 
 .menu-item {
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   background: white;
   border-radius: 12px;
   padding: 1rem;
@@ -302,13 +309,13 @@
   bottom: 0;
   left: 0;
   width: 100%;
-  background: #F6F2ED;
+  background: #fefaf6;
   padding: 2rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   box-sizing: border-box;
-  border-top: 10px solid #B4B4B4;
+  border-top: 10px solid #e6e6e6;
   height: 440px;
 }
 
@@ -365,13 +372,13 @@
 }
 
 .footer-option img {
-  width: 50px;
-  height: 50px;
+  width: 45px;
+  height: 45px;
   margin-bottom: 0.5rem;
 }
 
 .footer-options span {
-  font-size: 1rem;
+  font-size: 1.2rem;
 }
 
 .modal-overlay {
@@ -464,9 +471,10 @@
   border-radius: 8px;
   cursor: pointer;
 }
+
 /* 스마트 필터 모달 */
 .smart-filter-modal {
-  background: white;
+  background: #fffcf8;
   border-radius: 20px;
   padding: 40px;
   width: 90%;
@@ -476,24 +484,36 @@
 }
 
 .smart-filter-modal h3 {
-  font-size: 32px;
-  margin-bottom: 30px;
+  font-size: 40px;
+  margin-bottom: 50px;
   text-align: center;
 }
 
-.filter-row {
+.filter-section {
+  background: #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  border-radius: 15px;
+  padding: 25px;
   margin-bottom: 25px;
 }
 
-.filter-row label {
-  display: block;
-  font-size: 24px;
+.filter-section label {
+  font-size: 30px;
   font-weight: bold;
-  margin-bottom: 10px;
-  color: #333;
+  margin-bottom: 15px;
+  display: block;
+  color: #222;
+}
+
+/* 기준 설명(권장량 안내) */
+.filter-hint {
+  font-size: 22px;
+  color: #777;
+  margin-bottom:20px;
 }
 
 .filter-buttons {
+  display: block;
   display: flex;
   gap: 10px;
 }
@@ -501,7 +521,7 @@
 .filter-buttons button {
   flex: 1;
   padding: 12px 20px;
-  font-size: 20px;
+  font-size: 22px;
   border: 2px solid #ddd;
   border-radius: 8px;
   background: white;
@@ -519,24 +539,51 @@
   border-color: #3a3a58;
 }
 
+.smart-filter-buttons {
+  display: flex;
+  margin-top: 80px;
+}
+
+.smart-filter-buttons button {
+  flex: 1;
+  padding: 20px 0;
+  font-size: 25px;
+  border-radius: 16px;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.smart-filter-buttons .cancel-btn {
+  background: #e6e6e6;
+  color: #333;
+}
+
+.smart-filter-buttons .add-btn {
+  background: #3a3a58;
+  color: white;
+}
+
 /* 옵션 선택 모달 버튼 */
 .option-cancel {
-  background: #ccc;
-  padding: 30px 30px;
+  background: #e6e6e6;
+  padding: 20px 40px;
   border: none;
+  font-size:20px;
   border-radius: 8px;
 }
 
 .option-add {
-  background: #e60023;
+  background: #3a3a58;
   color: white;
-  padding: 30px 30px;
+  padding: 20px 40px;
+  font-size:20px;
   border: none;
   border-radius: 8px;
 }
 
 .option-section {
   margin-top: 16px;
+  font-size:22px;
 }
 
 .option-section button {
@@ -561,8 +608,27 @@
   border-radius: 8px;
   margin-top: 8px;
   text-align: left;
-  font-size: 0.95rem;
+
   color: #333;
+}
+.option-detail-toggle {
+  cursor: pointer;
+  text-decoration: underline;
+  color: #3A3A58;
+  margin-top: 10px;
+  font-size: 0.5rem;   /* ← 상세정보 보기 글씨 크기 */
+}
+.option-menu-name {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-top: px;
+  color: #222;
+}
+
+.option-menu-desc {
+  font-size: 1.3rem;
+  color: #555;
+  margin-top: 4px;
 }
 
 .touch-mode-footer {
@@ -694,7 +760,7 @@
   border: none;
   background: #f3f3f3;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 1.3rem;
 }
 
 .option-section button.active {
@@ -702,12 +768,21 @@
   color: white;
 }
 
+
 .nutrition-box {
   margin-top: 1rem;
   background: #f9f9f9;
   border-radius: 10px;
   padding: 10px;
-  font-size: 0.95rem;
+  font-size: 1.3rem;
+}
+.option-detail-toggle {
+  cursor: pointer;
+  text-decoration: underline;
+  color: #3A3A58;
+  margin-top: 10px;
+  font-size: 1.5rem;   /* ← 상세정보 보기 글씨 크기 */
+  font-weight: 600;
 }
 
 /* 가로 스크롤 활성화 */
@@ -781,4 +856,57 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+.smart-filter-top-text {
+  width: 100%;
+  text-align: center;
+  padding: 30px 10px;
+  font-size: 32px;
+  font-weight: 700;
+  color: #2d2d40;
+  background: #ffffff;
+  border-radius: 20px;
+  position: sticky;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+.smart-condition-detail {
+  color: #e82929; /* 포인트 색 */
+  font-weight: 800;
+  font-size: 25px;
+}
+
+.smart-filter-hint {
+  text-align: center;
+  font-size: 20px;
+  color: #6f6f85;
+  margin-top:25px;
+}
+
+.smart-filter-buttons-area {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.smart-mini-btn {
+  padding: 10px 22px;
+  background: #eceffd;
+  border: 1px solid #d4d7ee;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #3a3a58;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.smart-filter-container {
+  position: sticky;
+  top: 0px; 
+  z-index: 15;
+  margin-bottom: 30px;
+}
+.smart-mini-btn:hover {
+  background: #dce0f7;
 }

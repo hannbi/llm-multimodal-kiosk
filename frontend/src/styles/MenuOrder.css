@@ -104,7 +104,7 @@
 
 /* 주문 목록 */
 .order-list-container {
-  background-color: #f5f1ee;
+  background-color: #fefaf6;
   flex: 1;
   padding: 30px 20px;
   border-radius: 25px 25px 0 0;
@@ -140,7 +140,7 @@
 
 .order-total-price {
   font-size: 45px;
-  color: #d60000;
+  color: #e82929;;
   font-weight: 800;
 }
 
@@ -202,7 +202,7 @@
 
 .menu-price {
   font-weight: bold;
-  color: red;
+  color: #e82929;;
   margin-left: 20px;
    font-size: 34px;
 }

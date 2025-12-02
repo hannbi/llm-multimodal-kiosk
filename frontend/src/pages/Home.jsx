@@ -15,7 +15,7 @@ function Home() {
     const interval = setInterval(() => {
       setBlink(true);
       setTimeout(() => setBlink(false), 800); // 깜박임 지속시간 (0.15초)
-    }, 3000); // 3초마다 반복
+    }, 2000); // 3초마다 반복
 
     return () => clearInterval(interval);
   }, []);

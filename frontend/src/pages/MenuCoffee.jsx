@@ -83,6 +83,46 @@ function MenuCoffee() {
     }, 50);
   };
 
+  const buildFilterResultText = (filters) => {
+    const labels = [];
+
+    if (filters.caffeine === "없음")
+      labels.push("카페인 없음 ( 0mg )");
+    else if (filters.caffeine === "적음")
+      labels.push("카페인 적음 ( <100mg )");
+    else if (filters.caffeine === "많음")
+      labels.push("카페인 많음 ( ≥150mg )");
+
+    if (filters.sugar === "적음")
+      labels.push("당류 적음 ( <5g )");
+    else if (filters.sugar === "많음")
+      labels.push("당류 많음 ( ≥50g )");
+
+    if (filters.calories === "낮음")
+      labels.push("칼로리 낮음 ( <130kcal )");
+    else if (filters.calories === "높음")
+      labels.push("칼로리 높음 ( ≥220kcal )");
+
+    if (filters.protein === "없음")
+      labels.push("단백질 없음 ( 0g )");
+    else if (filters.protein === "적음")
+      labels.push("단백질 적음 ( <10g )");
+    else if (filters.protein === "많음")
+      labels.push("카페인 많음 ( ≥10mg )");
+
+    if (filters.protein === "많음")
+      labels.push("단백질 많음 ( ≥10g )");
+
+    if (filters.sodium === "없음")
+      labels.push("나트륨 없음 ( 0mg )");
+    else if (filters.sodium === "적음")
+      labels.push("나트륨 적음 ( <100mg )");
+    else if (filters.sodium === "많음")
+      labels.push("나트륨 많음 ( ≥200mg )");
+
+    return labels.join(" · ");
+  };
+
   // 🔥 새로운 필터링 함수
   const applySmartFilter = async () => {
     const params = new URLSearchParams();
@@ -111,7 +151,7 @@ function MenuCoffee() {
       params.append('sugar_min', 0);
       params.append('sugar_max', 5);
     } else if (smartFilters.sugar === '적음') {
-      params.append('sugar_min', 5);
+      params.append('sugar_min', 2);
       params.append('sugar_max', 25);
     } else if (smartFilters.sugar === '많음') {
       params.append('sugar_min', 50);
@@ -135,17 +175,20 @@ function MenuCoffee() {
     } else if (smartFilters.protein === '적음') {
       params.append('protein_min', 2);
       params.append('protein_max', 10);
+
     } else if (smartFilters.protein === '많음') {
       params.append('protein_min', 10);
     }
 
     // 서버에 요청
-    const res = await fetch(`http://localhost:5000/smart_filter?${params.toString()}`);
+    const res = await fetch(`http://localhost:5000/api/smart_filter?${params.toString()}`);
     const data = await res.json();
 
     setSmartRecommendData(data.recommend || []);
     setFilterResultText(generateFilterText());
-    setActiveCategory("스마트추천");
+    setTimeout(() => {
+      setActiveCategory("스마트추천");
+    }, 0);
     setShowSmartFilterModal(false);
 
     setTimeout(() => {
@@ -175,7 +218,7 @@ function MenuCoffee() {
     }
 
     if (conditions.length === 0) {
-      return "전체 메뉴입니다";
+      return "전체";
     }
 
     return conditions.join(', ') + " 메뉴들입니다";
@@ -714,7 +757,7 @@ function MenuCoffee() {
               }
             }}
           >
-            ★ 스마트추천
+            ⭐스마트 추천
           </li>
         </ul>
       </aside>
@@ -724,25 +767,25 @@ function MenuCoffee() {
         <div className="menu-fixed-bar">{activeCategory}</div>
 
         <div className="menu-scroll-area">
-          <div className="menu-grid">
-            {/* 스마트추천 화면일 때 */}
-            {/* 스마트추천 화면일 때 */}
-            {/* 스마트추천 화면일 때 */}
-            {activeCategory === "스마트추천" ? (
-              <div style={{ width: "105%" }}>
+          {/* ⭐ 상단 추천 조건 문구 (터치 모드 */}
+          {activeCategory === "스마트추천" && isTouchMode && filterResultText && (
+            <div className="smart-filter-container">
+              <div className="smart-filter-top-text">
+                <p>요청하신 조건이 적용된 추천 메뉴입니다</p>
+                {/* 상세 조건 표시 */}
+                <span className="smart-condition-detail">
+                  {buildFilterResultText(smartFilters)}
+                </span>
 
-                {/* 🔥 필터 결과 멘트 추가 */}
-                {filterResultText && (
-                  <div style={{
-                    textAlign: 'center',
-                    fontSize: '28px',
-                    fontWeight: 'bold',
-                    margin: '20px 0',
-                    color: '#3a3a58'
-                  }}>
-                    {filterResultText}
-                  </div>
-                )}
+                <p className="smart-filter-hint">
+                  ※ 조건에 따라 온도·사이즈가 자동 적용되어 여러 옵션이 표시될 수 있습니다
+                </p>
+              </div>
+            </div>
+          )}
+          <div className="menu-grid">
+            {activeCategory === "스마트추천" ? (
+              <>
 
                 {/* 🔥 음성모드에서만 13개 버튼 표시 */}
                 {!isTouchMode && (
@@ -776,28 +819,37 @@ function MenuCoffee() {
                   </div>
                 )}
 
-                {/* 🔥 추천 결과 출력 */}
+                {/* 🔥 추천 메뉴 결과 */}
                 {smartRecommendData.length === 0 ? (
                   <p style={{ opacity: 0.7, textAlign: "center" }}>
                     {isTouchMode ? "필터를 설정하면 메뉴가 표시됩니다." : "추천 기준을 선택하면 메뉴가 표시됩니다."}
                   </p>
                 ) : (
-                  <div className="menu-grid">
-                    {smartRecommendData.map((item, i) => (
-                      <div className="menu-item" key={i} onClick={() => handleMenuClick(item)}>
-                        <img src={item.img} alt={item.name} />
-                        <p>
-                          {item.name}
-                          <br />
-                          <strong>{item.price.toLocaleString()}원</strong>
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                  smartRecommendData.map((item, i) => (
+                    <div className="menu-item" key={i} onClick={() => {
+                      setSelectedMenu(item);
+                      setSelectedSize(item.size);
+                      setSelectedTemp(item.temperature);
+                      setShowModal(true);
+                      fetch(`http://localhost:5000/api/menu/${item.name}/options`)
+                        .then(res => res.json())
+                        .then(opt => {
+                          setAvailableSizes(opt.sizes || []);
+                          setAvailableTemps(opt.temperatures || []);
+                        });
+                    }}>
+                      <img src={item.img} alt={item.name} />
+                      <p>
+                        {item.name}
+                        <br />
+                        <strong>{item.price.toLocaleString()}원</strong>
+                      </p>
+                    </div>
+                  ))
                 )}
-              </div>
-
+              </>
             ) : (
+
               /* 기존 카테고리 메뉴 출력 */
               menuData[activeCategory]?.length > 0 ? (
                 menuData[activeCategory].map((item, i) => (
@@ -814,10 +866,7 @@ function MenuCoffee() {
                 <p>메뉴가 없습니다.</p>
               )
             )}
-
-
           </div>
-
         </div>
       </main>
 
@@ -840,7 +889,7 @@ function MenuCoffee() {
             <button
               className="voice-record-btn"
               onClick={startRecording}
-              style={{ background: 'red', zIndex: 9999 }}
+              style={{ backgroundColor: '#e82929', zIndex: 9999, color: 'white' }}
             >
               🎤 말하기
             </button>
@@ -855,7 +904,7 @@ function MenuCoffee() {
               <div className="cart-slider-area">
 
                 {cartItems.length === 0 && (
-                  <div style={{ padding: 20, opacity: 0.7 }}>담긴 메뉴가 없습니다.</div>
+                  <div style={{ padding: 20, opacity: 0.7 }}></div>
                 )}
 
                 {cartItems.map((item, idx) => (
@@ -885,7 +934,7 @@ function MenuCoffee() {
             <div className="summary-box">
               <div className="summary-title">총 결제금액</div>
               <div className="summary-price">
-                ₩{totalPrice.toLocaleString()}원
+                ₩ {totalPrice.toLocaleString()}원
               </div>
               <div className="summary-buttons">
                 <button className="cancel-order">전체 취소</button>
@@ -1008,36 +1057,14 @@ function MenuCoffee() {
       {showSmartFilterModal && (
         <div className="modal-overlay">
           <div className="smart-filter-modal">
-            <h3>스마트 추천 설정</h3>
-
-            {/* 칼로리 */}
-            <div className="filter-row">
-              <label>칼로리</label>
-              <div className="filter-buttons">
-                <button
-                  className={smartFilters.calories === '낮음' ? 'active' : ''}
-                  onClick={() => setSmartFilters({ ...smartFilters, calories: '낮음' })}
-                >
-                  낮음
-                </button>
-                <button
-                  className={smartFilters.calories === '전체' ? 'active' : ''}
-                  onClick={() => setSmartFilters({ ...smartFilters, calories: '전체' })}
-                >
-                  전체
-                </button>
-                <button
-                  className={smartFilters.calories === '높음' ? 'active' : ''}
-                  onClick={() => setSmartFilters({ ...smartFilters, calories: '높음' })}
-                >
-                  높음
-                </button>
-              </div>
-            </div>
-
+            <h3>⭐ 스마트 추천 옵션</h3>
             {/* 카페인 */}
-            <div className="filter-row">
-              <label>카페인</label>
+            <div className="filter-section">
+              <label>카페인 (Caffeine)</label>
+              <div className="filter-hint">
+                <p>※ 1일 권장량은</p>
+                <p>성인 400mg, 임산부 200mg, 청소년 100mg 이하입니다</p>
+              </div>
               <div className="filter-buttons">
                 <button
                   className={smartFilters.caffeine === '없음' ? 'active' : ''}
@@ -1066,9 +1093,34 @@ function MenuCoffee() {
               </div>
             </div>
 
+            {/* 칼로리 */}
+            <div className="filter-section">
+              <label>칼로리 (Calories)</label>
+              <div className="filter-buttons">
+                <button
+                  className={smartFilters.calories === '낮음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, calories: '낮음' })}
+                >
+                  낮음
+                </button>
+                <button
+                  className={smartFilters.calories === '전체' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, calories: '전체' })}
+                >
+                  전체
+                </button>
+                <button
+                  className={smartFilters.calories === '높음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, calories: '높음' })}
+                >
+                  높음
+                </button>
+              </div>
+            </div>
+
             {/* 당류 */}
-            <div className="filter-row">
-              <label>당류</label>
+            <div className="filter-section">
+              <label>당류 (Sugars)</label>
               <div className="filter-buttons">
                 <button
                   className={smartFilters.sugar === '없음' ? 'active' : ''}
@@ -1098,8 +1150,8 @@ function MenuCoffee() {
             </div>
 
             {/* 나트륨 */}
-            <div className="filter-row">
-              <label>나트륨</label>
+            <div className="filter-section">
+              <label>나트륨 (Sodium)</label>
               <div className="filter-buttons">
                 <button
                   className={smartFilters.sodium === '없음' ? 'active' : ''}
@@ -1129,8 +1181,8 @@ function MenuCoffee() {
             </div>
 
             {/* 단백질 */}
-            <div className="filter-row">
-              <label>단백질</label>
+            <div className="filter-section">
+              <label>단백질 (Protein)</label>
               <div className="filter-buttons">
                 <button
                   className={smartFilters.protein === '없음' ? 'active' : ''}
@@ -1160,7 +1212,7 @@ function MenuCoffee() {
             </div>
 
             {/* 버튼 */}
-            <div className="modal-buttons">
+            <div className="modal-buttons smart-filter-buttons">
               <button
                 onClick={() => {
                   setShowSmartFilterModal(false);
@@ -1187,6 +1239,7 @@ function MenuCoffee() {
           </div>
         </div>
       )}
+
       {/*옵션 선택 모달*/}
       {showModal && (
         <div className="modal-overlay">
@@ -1195,13 +1248,13 @@ function MenuCoffee() {
             <img
               src={selectedMenu?.img}
               alt={selectedMenu?.name}
-              style={{ width: '140px', borderRadius: '8px' }}
+              style={{ width: '130px', borderRadius: '8px' }}
             />
-            <p><strong>{selectedMenu?.name || '음료 선택됨'}</strong></p>
-            <p>V3X만의 특별한 원두로 제작한 {selectedMenu?.name}</p>
+            <p className="option-menu-name"><strong>{selectedMenu?.name || '음료 선택됨'}</strong></p>
+            <p className="option-menu-desc">Moment만의 특별한 메뉴인 {selectedMenu?.name}</p>
 
             {/* 실시간 가격 반영 */}
-            <p style={{ fontWeight: 'bold', fontSize: '1.8rem', marginTop: '12px' }}>
+            <p style={{ fontWeight: 'bold', fontSize: '2.5rem', marginTop: '15px',marginBottom:'30px' }}>
               ₩{selectedMenu?.price?.toLocaleString() || 0}
             </p>
 
@@ -1285,12 +1338,7 @@ function MenuCoffee() {
             <div className="option-section">
               <p
                 onClick={() => setShowDetail(!showDetail)}
-                style={{
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                  color: '#3A3A58',
-                  marginTop: '10px',
-                }}
+                className="option-detail-toggle"
               >
                 {showDetail ? '상세정보 닫기' : '상세정보 보기'}
               </p>

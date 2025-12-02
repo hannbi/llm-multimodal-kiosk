@@ -81,3 +81,57 @@ def get_available_options(menu_name: str):
     temps = sorted({r["temperature_type"].capitalize() for r in rows if r["temperature_type"]})
 
     return {"sizes": sizes, "temperatures": temps}
+
+# ⭐ 스마트 추천 API
+@router.get("/smart_filter")
+def smart_filter(
+    calories_min: int = 0, calories_max: int = 9999,
+    caffeine_min: int = 0, caffeine_max: int = 9999,
+    sugar_min: int = 0, sugar_max: int = 9999,
+    sodium_min: int = 0, sodium_max: int = 9999,
+    protein_min: int = 0, protein_max: int = 9999
+):
+    conn = get_db()
+    cur = conn.cursor()
+
+    # ✔ MenuItem × Product JOIN하여 옵션별 nutrition 가져오기
+    rows = cur.execute("""
+        SELECT 
+            m.menu_id, m.name, m.category, m.image_url,
+            p.product_id, p.size, p.temperature_type, p.price,
+            p.calories_kcal, p.sugar_g, p.protein_g, 
+            p.caffeine_mg, p.sodium_mg
+        FROM MenuItem m
+        JOIN Product p ON m.menu_id = p.menu_id
+    """).fetchall()
+
+    conn.close()
+
+    results = []
+
+    for r in rows:
+        # ✔ nutrition 필터 조건 검사
+        r_caf = r["caffeine_mg"] if r["caffeine_mg"] is not None else 0
+          
+        if not (calories_min <= r["calories_kcal"] <= calories_max): continue
+        if not (caffeine_min <=  r_caf <= caffeine_max): continue
+        if not (sugar_min <= r["sugar_g"] <= sugar_max): continue
+        if not (sodium_min <= r["sodium_mg"] <= sodium_max): continue
+        if not (protein_min <= r["protein_g"] <= protein_max): continue
+
+        # ✔ 프론트로 옵션 포함된 메뉴 반환
+        results.append({
+            "name": r["name"],
+            "category": r["category"],
+            "img": r["image_url"],
+            "price": r["price"],
+            "size": r["size"].capitalize() if r["size"] else None,
+"temperature": r["temperature_type"].capitalize() if r["temperature_type"] else None,
+            "calories_kcal": r["calories_kcal"],
+            "sugar_g": r["sugar_g"],
+            "protein_g": r["protein_g"],
+            "caffeine_mg": r["caffeine_mg"],
+            "sodium_mg": r["sodium_mg"]
+        })
+
+    return {"recommend": results}
