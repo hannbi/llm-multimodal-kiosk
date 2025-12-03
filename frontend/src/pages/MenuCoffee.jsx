@@ -89,45 +89,49 @@ setTimeout(() => recorder.stop(), 5000);
     }, 50);
   };
 
-  const buildFilterResultText = (filters) => {
-    const labels = [];
+const buildFilterResultText = (filters) => {
+  const labels = [];
 
-    if (filters.caffeine === "없음")
-      labels.push("카페인 없음 ( 0mg )");
-    else if (filters.caffeine === "적음")
-      labels.push("카페인 적음 ( <100mg )");
-    else if (filters.caffeine === "많음")
-      labels.push("카페인 많음 ( ≥150mg )");
+  // 카페인
+  if (filters.caffeine === "없음")
+    labels.push("카페인 없음 ( 0mg )");
+  else if (filters.caffeine === "적음")
+    labels.push("카페인 적음 ( <100mg )");
+  else if (filters.caffeine === "많음")
+    labels.push("카페인 많음 ( ≥150mg )");
 
-    if (filters.sugar === "적음")
-      labels.push("당류 적음 ( <5g )");
-    else if (filters.sugar === "많음")
-      labels.push("당류 많음 ( ≥50g )");
+  // 당류
+  if (filters.sugar === "없음")
+    labels.push("당류 없음 ( 0g )");
+  else if (filters.sugar === "적음")
+    labels.push("당류 적음 ( <5g )");
+  else if (filters.sugar === "많음")
+    labels.push("당류 많음 ( ≥50g )");
 
-    if (filters.calories === "낮음")
-      labels.push("칼로리 낮음 ( <130kcal )");
-    else if (filters.calories === "높음")
-      labels.push("칼로리 높음 ( ≥220kcal )");
+  // 칼로리
+  if (filters.calories === "낮음")
+    labels.push("칼로리 낮음 ( <130kcal )");
+  else if (filters.calories === "높음")
+    labels.push("칼로리 높음 ( ≥220kcal )");
 
-    if (filters.protein === "없음")
-      labels.push("단백질 없음 ( 0g )");
-    else if (filters.protein === "적음")
-      labels.push("단백질 적음 ( <10g )");
-    else if (filters.protein === "많음")
-      labels.push("카페인 많음 ( ≥10mg )");
+  // 단백질  ← 🔥 수정됨
+  if (filters.protein === "없음")
+    labels.push("단백질 없음 ( 0g )");
+  else if (filters.protein === "적음")
+    labels.push("단백질 적음 ( <10g )");
+  else if (filters.protein === "많음")
+    labels.push("단백질 많음 ( ≥10g )");
 
-    if (filters.protein === "많음")
-      labels.push("단백질 많음 ( ≥10g )");
+  // 나트륨
+  if (filters.sodium === "없음")
+    labels.push("나트륨 없음 ( 0mg )");
+  else if (filters.sodium === "적음")
+    labels.push("나트륨 적음 ( <100mg )");
+  else if (filters.sodium === "많음")
+    labels.push("나트륨 많음 ( ≥200mg )");
 
-    if (filters.sodium === "없음")
-      labels.push("나트륨 없음 ( 0mg )");
-    else if (filters.sodium === "적음")
-      labels.push("나트륨 적음 ( <100mg )");
-    else if (filters.sodium === "많음")
-      labels.push("나트륨 많음 ( ≥200mg )");
-
-    return labels.join(" · ");
-  };
+  return labels.join(" · ");
+};
 
   // 🔥 새로운 필터링 함수
   const applySmartFilter = async () => {
@@ -190,11 +194,12 @@ setTimeout(() => recorder.stop(), 5000);
     const res = await fetch(`http://localhost:5000/api/smart_filter?${params.toString()}`);
     const data = await res.json();
 
-    setSmartRecommendData(data.recommend || []);
-    setFilterResultText(generateFilterText());
-    setTimeout(() => {
-      setActiveCategory("스마트추천");
-    }, 0);
+setSmartRecommendData(data.recommend || []);
+setFilterResultText(buildFilterResultText(smartFilters));
+setTimeout(() => {
+  setActiveCategory("스마트추천");
+}, 0);
+
     setShowSmartFilterModal(false);
 
     setTimeout(() => {
@@ -303,38 +308,74 @@ if (data.intent === "SmartFilter") {
   }
 
   // 3) 필터 반영
-  setSmartFilters(resetFilters);
-  setFilterResultText(generateFilterText());
+setSmartFilters(resetFilters);
 
-  // 4) 안내 문장
-  setAiText(`${nutrient} ${level} 기준으로 추천 메뉴 보여드릴게요.`);
+const text = buildFilterResultText(resetFilters);
+setFilterResultText(text);
 
-  // 5) 스마트추천 화면 활성화
-  setActiveCategory("스마트추천");
+setActiveCategory("스마트추천");
 
-  // 6) 필터는 state 업데이트 후 실행해야 함
-  setTimeout(() => {
-    applySmartFilter();
-  }, 50);
+// ⭐ 서버에 직접 요청해서 추천 받아오기 (applySmartFilter 쓰지 않음)
+fetch(`http://localhost:5000/api/smart_filter?${new URLSearchParams(
+  buildParamsFromFilters(resetFilters)
+).toString()}`)
+  .then(res => res.json())
+  .then(data => {
+    setSmartRecommendData(data.recommend || []);
+  });
 
-  return;  // ★ 안전하게 종료
+return;
+
 }
 
 
 
       // 🔥 스마트추천 intent
-      if (data.intent === "SmartRecommend" && data.recommend) {
-        setActiveCategory("스마트추천");
-        setSmartRecommendData(data.recommend);
-        setAiText(data.ai_text);
+// 🔥 스마트추천 intent (복수 조건 지원 버전)
+if (data.intent === "SmartRecommend" && data.recommend) {
 
-        setTimeout(() => {
-          const scrollArea = document.querySelector(".menu-scroll-area");
-          if (scrollArea) scrollArea.scrollTop = 0;
-        }, 50);
+  setActiveCategory("스마트추천");
+  setSmartRecommendData(data.recommend);
+  setAiText(data.ai_text);
 
-        return;
-      }
+  // 🔥 초기화
+  const newFilters = {
+    calories: '전체',
+    caffeine: '전체',
+    sugar: '전체',
+    sodium: '전체',
+    protein: '전체'
+  };
+
+  // 🔥 filters 배열 처리
+  if (data.slots?.filters && Array.isArray(data.slots.filters)) {
+
+    const nutrientMap = {
+      calories_kcal: "calories",
+      caffeine_mg: "caffeine",
+      sugar_g: "sugar",
+      sodium_mg: "sodium",
+      protein_g: "protein"
+    };
+
+    const levelMap = {
+      max: "많음",
+      min: "적음"
+    };
+
+    data.slots.filters.forEach(cond => {
+      const k = nutrientMap[cond.nutrient];
+      const l = levelMap[cond.compare];
+      if (k && l) newFilters[k] = l;
+    });
+
+    setSmartFilters(newFilters);
+    setFilterResultText(buildFilterResultText(newFilters));
+  }
+
+  return;
+}
+
 
       // 🔥 BuildOrder → 옵션 모달 자동 오픈
       if (data.intent === "BuildOrder" && data.slots?.menu_name) {

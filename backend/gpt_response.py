@@ -308,43 +308,63 @@ slots:
 사용자가 "빙수", "빙수 아이스크림", "빙수/아이스크림", "얼음 메뉴"라고 말해도
 slots.category 는 "빙수/아이스크림" 으로 설정한다.
 
-# 🔥 SmartRecommend 추천 규칙 (영양 기반 추천 기능)
+# 🔥 SmartRecommend 추천 규칙 (복수 조건 지원)
 
-아래 표현이 문장에 포함되면 SmartRecommend 로 분류한다:
-
-"칼로리 낮은", "칼로리 제일 낮은", "칼로리 가장 낮은",
-"당류 낮은", "당류 적은", "당류 제일 적은", "당류 가장 적은",
-"카페인 낮은", "카페인 적은", "카페인 제일 적은",
-"나트륨 낮은", "나트륨 적은", "나트륨 가장 적은",
-"칼로리 높은", "칼로리 제일 높은",
-"카페인 높은", "카페인 많은", "카페인 가장 많은",
-"당류 높은", "단백질 많은", "나트륨 높은",
-"가격 낮은", "가격 싼", "저렴한", 
-"가격 높은", "비싼",
-"랜덤 추천", "아무거나 추천", "아무거나", "뭐가 좋을까"
-
-
-SmartRecommend 규칙:
-
-- intent = "SmartRecommend"
-- slots:
-    nutrient: "calories_kcal" / "sugar_g" / "protein_g" / "caffeine_mg" / "sodium_mg"
-    compare: "min" 또는 "max"
+사용자가 문장에서 칼로리, 당류, 단백질, 카페인, 나트륨 등의 영양소와
+"높은", "낮은", "많은", "적은", "가장", "제일" 등의 비교 표현을 함께 사용하면
+intent 는 SmartRecommend 로 설정한다.
 
 예시:
+- "카페인 많고 나트륨 적은 메뉴 알려줘"
+- "칼로리 낮고 단백질 많은 음료 추천해줘"
+- "카페인 높은순으로 정렬해줘"
+- "당류 낮고 칼로리도 낮은 메뉴 뭐 있어?"
 
-"칼로리 낮은 음료 추천해줘"
-→ nutrient="calories_kcal", compare="min"
+SmartRecommend 는 반드시 filters 배열을 사용해야 한다.
 
-"카페인 가장 많은 메뉴 뭐 있어?"
-→ nutrient="caffeine_mg", compare="max"
+slots.filters 형식은 다음과 같다:
 
-"당류 적은 음료 알려줘"
-→ nutrient="sugar_g", compare="min"
+{
+  "filters": [
+    { "nutrient": "caffeine_mg", "compare": "max" },
+    { "nutrient": "sodium_mg",   "compare": "min" }
+  ]
+}
 
-response:
-- 반드시 한 문장으로 자연스럽게 만들기
-예) "칼로리가 가장 낮은 메뉴를 추천해드릴게요."
+▶ nutrient 자동 매핑 규칙
+"칼로리", "열량" → "calories_kcal"
+"당", "당류", "당분" → "sugar_g"
+"단백질" → "protein_g"
+"카페인" → "caffeine_mg"
+"나트륨", "소금", "염분" → "sodium_mg"
+
+▶ compare 매핑 규칙
+"높은", "많은", "큰", "가장 높은", "제일 높은", "가장 많은", "제일 많은"
+    → compare="max"
+
+"낮은", "적은", "작은", "가장 낮은", "제일 낮은", "가장 적은", "제일 적은"
+    → compare="min"
+
+한 문장 안에 여러 영양소 비교가 들어오면 모두 filters 배열에 넣는다.
+
+예시:
+"카페인 많고 나트륨 적은 메뉴 추천해줘"
+
+→ AI 출력 JSON 예시는 반드시 다음과 같아야 한다:
+
+{
+  "intent": "SmartRecommend",
+  "slots": {
+    "filters": [
+      { "nutrient": "caffeine_mg", "compare": "max" },
+      { "nutrient": "sodium_mg",   "compare": "min" }
+    ]
+  },
+  "response": "요청하신 조건으로 추천해드릴게요."
+}
+
+절대 단일 nutrient/compare 구조를 사용하지 않는다.
+무조건 filters 배열을 사용해야 한다.
 
 
 # 🔥 AddToCart 관련 규칙

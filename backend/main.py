@@ -843,68 +843,102 @@ def process_intent(intent, slots):
         menu_list = ", ".join(matched)
         return f"{readable}가 가장 { '높은' if compare=='max' else '낮은' } 메뉴는 {menu_list}이며 모두 {target_value} 입니다."
 # --------------------
-# SmartRecommend (완성본 TOP5 + 가격 + 랜덤 지원)
-# --------------------
+
+    # --------------------
+    # SmartRecommend (터치 모드와 동일한 범위 필터 버전)
+    # --------------------
     if intent == "SmartRecommend":
-        nutrient = slots.get("nutrient")
-        compare = slots.get("compare")
-
-        if not nutrient:
-            nutrient = "random"
-            compare = "any"
-
-    # 1) 랜덤 추천
-        if nutrient == "random":
-            import random
-            items = db_get_all_menu_with_price()
-            random.shuffle(items)
-            results = items[:5]
-
-            return {
-                "message": "아무거나 5개 랜덤으로 추천해드릴게요!",
-                "recommend": results
-            }
-
-    # 2) 가격 추천
-        if nutrient == "price":
-            items = db_get_all_menu_with_price()
-            reverse_sort = (compare == "max")
-            sorted_items = sorted(items, key=lambda x: x["price"], reverse=reverse_sort)
-            results = sorted_items[:5]
-
-            msg = "가격이 가장 높은 메뉴 TOP5입니다." if compare == "max" \
-                else "가격이 가장 낮은 메뉴 TOP5입니다."
-
-            return {
-                "message": msg,
-                "recommend": results
-            }
-
-    # 3) 영양소 기반 추천 (칼로리/당류/단백질/카페인/나트륨)
+        filters = slots.get("filters")
         items = db_get_all_menu_with_price()
-        valid_items = [item for item in items if item.get(nutrient) is not None]
 
-        reverse_sort = (compare == "max")
-        sorted_items = sorted(valid_items, key=lambda x: x[nutrient], reverse=reverse_sort)
+        # -----------------------
+        # filters 없으면 단일 nutrient 로 구성
+        # -----------------------
+        if not filters:
+            nutrient = slots.get("nutrient")
+            compare = slots.get("compare")
 
-        results = sorted_items
+            if nutrient:
+                filters = [{ "nutrient": nutrient, "compare": compare }]
+            else:
+                return { "message": "추천 조건을 이해하지 못했어요.", "recommend": [] }
 
-        readable = {
+        # -----------------------
+        # 범위 매핑 함수 (터치 모드와 동일)
+        # -----------------------
+        def get_range(nutrient, compare):
+            if nutrient == "caffeine_mg":
+                return (150, None) if compare == "max" else (0, 100)
+            if nutrient == "sodium_mg":
+                return (200, None) if compare == "max" else (0, 100)
+            if nutrient == "sugar_g":
+                return (50, None) if compare == "max" else (0, 25)
+            if nutrient == "protein_g":
+                return (10, None) if compare == "max" else (0, 10)
+            if nutrient == "calories_kcal":
+                return (220, None) if compare == "max" else (0, 130)
+            return (None, None)
+
+        # -----------------------
+        # 각 조건 AND 필터링
+        # -----------------------
+        for cond in filters:
+            n = cond["nutrient"]
+            c = cond["compare"]
+
+            min_v, max_v = get_range(n, c)
+            new_items = []
+
+            for item in items:
+                val = item[n]
+                if val is None:
+                    continue
+
+                ok = True
+                if min_v is not None and val < min_v:
+                    ok = False
+                if max_v is not None and val > max_v:
+                    ok = False
+
+                if ok:
+                    new_items.append(item)
+
+            items = new_items
+
+        # -----------------------
+        # 정렬: 첫 번째 조건 기준
+        # -----------------------
+        first = filters[0]
+        n0 = first["nutrient"]
+        reverse_order = (first["compare"] == "max")
+        items = sorted(items, key=lambda x: x[n0], reverse=reverse_order)
+
+        results = items[:10]
+
+        # -----------------------
+        # 메시지 생성
+        # -----------------------
+        readable_map = {
             "calories_kcal": "칼로리",
             "sugar_g": "당류",
             "protein_g": "단백질",
             "caffeine_mg": "카페인",
             "sodium_mg": "나트륨",
-        }.get(nutrient, "영양소")
+        }
 
-        msg = f"{readable}가 {'높은' if compare=='max' else '낮은'} 순으로 정렬해드릴게요."
+        cond_texts = []
+        for cond in filters:
+            nu = readable_map.get(cond["nutrient"], cond["nutrient"])
+            cp = "높은" if cond["compare"] == "max" else "낮은"
+            cond_texts.append(f"{nu} {cp}")
 
+        msg = f"{' · '.join(cond_texts)} 조건에 맞는 메뉴를 추천해드릴게요."
 
         return {
             "message": msg,
             "recommend": results
         }
-    
+
  # --------------------
     # 3) AddToCart (🔥 신규 추가)
     # --------------------
@@ -1089,14 +1123,16 @@ def db_get_all_menu_with_price():
 
     cur.execute("""
         SELECT 
-            MenuItem.name,
-            Product.price,
-            MenuItem.image_url,
-            calories_kcal,
-            sugar_g,
-            protein_g,
-            caffeine_mg,
-            sodium_mg
+            MenuItem.name,          -- r[0]
+            Product.price,          -- r[1]
+            MenuItem.image_url,     -- r[2]
+            Product.temperature_type,  -- r[3]
+            Product.size,           -- r[4]
+            calories_kcal,          -- r[5]
+            sugar_g,                -- r[6]
+            protein_g,              -- r[7]
+            caffeine_mg,            -- r[8]
+            sodium_mg               -- r[9]
         FROM Product
         JOIN MenuItem ON Product.menu_id = MenuItem.menu_id
         GROUP BY MenuItem.name
@@ -1111,14 +1147,19 @@ def db_get_all_menu_with_price():
             "name": r[0],
             "price": r[1],
             "img": r[2],
-            "calories_kcal": r[3],
-            "sugar_g": r[4],
-            "protein_g": r[5],
-            "caffeine_mg": r[6],
-            "sodium_mg": r[7],
+            "temperature": r[3],
+            "size": r[4],
+
+            # ✅ 인덱스 정상 매핑됨
+            "calories_kcal": r[5],
+            "sugar_g": r[6],
+            "protein_g": r[7],
+            "caffeine_mg": r[8],
+            "sodium_mg": r[9],
         })
 
     return results
+
 
 
 # -----------------------------
