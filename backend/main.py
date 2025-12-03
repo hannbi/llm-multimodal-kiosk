@@ -681,13 +681,13 @@ def process_intent(intent, slots):
         if len(valid_temps) == 1 and not has_temp:
             pending["temperature"] = valid_temps[0]
             state["pending"] = pending
-            return f"{name}은(는) 온도가 {valid_temps[0]} 하나뿐이라 자동으로 선택했어요."
+            return f"{name}는 온도가 {valid_temps[0]} 하나뿐이라 자동으로 선택했어요."
 
 # 사이즈 1개 자동 선택 멘트
         if len(valid_sizes) == 1 and not has_size:
             pending["size"] = valid_sizes[0]
             state["pending"] = pending
-            return f"{name}은(는) 사이즈가 {valid_sizes[0]} 하나뿐이라 자동으로 선택했어요."
+            return f"{name}는 사이즈가 {valid_sizes[0]} 하나뿐이라 자동으로 선택했어요."
 
 # 커피는 strength 필요
         if is_coffee:
@@ -795,6 +795,7 @@ def process_intent(intent, slots):
                 f"단백질은 {to_int(detail['protein_g'])} g, "
                 f"카페인은 {to_int(detail['caffeine_mg'])} mg, "
                 f"나트륨은 {to_int(detail['sodium_mg'])} mg 입니다."
+                f"용량은 {to_int(detail['volume'])} ml 입니다."
         )
 
         value = detail.get(nutrient)
@@ -808,6 +809,7 @@ def process_intent(intent, slots):
             "sodium_mg": "나트륨은",
             "caffeine_mg": "카페인은",
             "protein_g": "단백질은",
+            "volume": "용량은",
         }.get(nutrient, "해당 값은")
 
         return f"{name}의 {readable} {to_int(value)} 입니다."
@@ -971,7 +973,7 @@ def process_intent(intent, slots):
 
         state["pending"] = {}
 
-        return f"{name} {qty}잔 담았어요."
+        return f"{name} {qty}개 담았어요."
 
     # --------------------
     # 장바구니 보기
@@ -1065,7 +1067,8 @@ def db_get_menu_detail(name):
             sugar_g,
             protein_g,
             caffeine_mg,
-            sodium_mg
+            sodium_mg,
+            volume_ml
         FROM Product
         JOIN MenuItem ON Product.menu_id = MenuItem.menu_id
         WHERE MenuItem.name = ?
@@ -1084,6 +1087,7 @@ def db_get_menu_detail(name):
         "protein_g": row[2],
         "caffeine_mg": row[3],
         "sodium_mg": row[4],
+        "volume": row[5]
     }
 
 def db_get_all_menu_details():
@@ -1100,7 +1104,8 @@ def db_get_all_menu_details():
             sugar_g,
             protein_g,
             caffeine_mg,
-            sodium_mg
+            sodium_mg,
+            volume_ml
         FROM Product
         JOIN MenuItem ON Product.menu_id = MenuItem.menu_id
         GROUP BY MenuItem.name
@@ -1117,7 +1122,8 @@ def db_get_all_menu_details():
             "sugar_g": r[2],
             "protein_g": r[3],
             "caffeine_mg": r[4],
-            "sodium_mg": r[5]
+            "sodium_mg": r[5],
+            "volume": r[6]
         })
 
     return items
@@ -1140,7 +1146,8 @@ def db_get_all_menu_with_price():
             sugar_g,                -- r[6]
             protein_g,              -- r[7]
             caffeine_mg,            -- r[8]
-            sodium_mg               -- r[9]
+            sodium_mg,             -- r[9]
+            volume_ml                -- r[10] 
         FROM Product
         JOIN MenuItem ON Product.menu_id = MenuItem.menu_id
         GROUP BY MenuItem.name
@@ -1164,6 +1171,7 @@ def db_get_all_menu_with_price():
             "protein_g": r[7],
             "caffeine_mg": r[8],
             "sodium_mg": r[9],
+            "volume_ml": r[10]
         })
 
     return results

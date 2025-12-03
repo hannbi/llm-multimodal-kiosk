@@ -467,36 +467,61 @@ if (data.intent === "SmartRecommend" && data.recommend) {
 
       // 🔥 NutritionQuery → 옵션창 열기
       // 🔥 NutritionQuery → 옵션창 열기
-      if (data.intent === "NutritionQuery" && data.slots?.menu_name) {
-        const menuName = data.slots.menu_name;
+// 🔥 NutritionQuery → 옵션창 열기
+if (data.intent === "NutritionQuery" && data.slots?.menu_name) {
+  const menuName = data.slots.menu_name;
 
-        const foundMenu = Object.values(menuData)
-          .flat()
-          .find((m) => m.name === menuName);
+  const foundMenu = Object.values(menuData)
+    .flat()
+    .find((m) => m.name === menuName);
 
-        if (foundMenu) {
-          setSelectedMenu(foundMenu);
-          setShowModal(true);
-          setShowDetail(true);
+  if (foundMenu) {
+    setSelectedMenu(foundMenu);
+    setShowModal(true);
+    setShowDetail(true);
 
-          // ✅ 수정: 옵션을 유지해야 하므로 절대 초기화하지 않음
-          // (아무 것도 넣지 않음)
+    // 옵션 초기화 금지 (음성 선택값 유지)
+    fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
+      .then((res) => res.json())
+      .then((opt) => {
+        setAvailableSizes(opt.sizes || []);
+        setAvailableTemps(opt.temperatures || []);
 
-          fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
+        let autoTemp = selectedTemp;
+        let autoSize = selectedSize;
+
+        // 자동 온도 선택
+        if (opt.temperatures?.length === 1) {
+          autoTemp = opt.temperatures[0];
+          setSelectedTemp(autoTemp);
+        }
+
+        // 자동 사이즈 선택
+        if (opt.sizes?.length === 1) {
+          autoSize = opt.sizes[0];
+          setSelectedSize(autoSize);
+        }
+
+        // ⭐ 자동선택 값 존재할 때만 detail API 호출
+        if (autoTemp && autoSize) {
+          fetch(`http://localhost:5000/api/menu/${foundMenu.name}/detail?size=${autoSize}&temperature=${autoTemp}`)
             .then((res) => res.json())
-            .then((opt) => {
-              setAvailableSizes(opt.sizes || []);
-              setAvailableTemps(opt.temperatures || []);
-
-              if (opt.temperatures?.length === 1) {
-                setSelectedTemp(opt.temperatures[0]);
-              }
-              if (opt.sizes?.length === 1) {
-                setSelectedSize(opt.sizes[0]);
-              }
+            .then((data) => {
+              setSelectedMenu((prev) => ({
+                ...prev,
+                price: data.price,
+                volume_ml: data.volume_ml,
+                calories_kcal: data.calories_kcal,
+                sugar_g: data.sugar_g,
+                protein_g: data.protein_g,
+                caffeine_mg: data.caffeine_mg,
+                sodium_mg: data.sodium_mg,
+              }));
             });
         }
-      }
+      });
+  }
+}
 
       // 🔥 AddToCart
       if (data.intent === "AddToCart") {
