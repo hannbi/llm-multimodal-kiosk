@@ -11,24 +11,30 @@ function MenuCoffee() {
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    const options = { mimeType: "audio/webm; codecs=opus" };
-    const recorder = new MediaRecorder(stream, options);
+const recorder = new MediaRecorder(stream);
 
-    const chunks = [];
+const chunks = [];
 
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.push(e.data);
-    };
+recorder.ondataavailable = (e) => {
+  if (e.data && e.data.size > 0) {
+    chunks.push(e.data);
+  }
+};
 
+recorder.onstop = () => {
+  if (chunks.length === 0) {
+    console.error("❌ 녹음된 데이터가 없습니다 (chunks empty)");
+    return;
+  }
 
-    recorder.onstop = () => {
-      const blob = new Blob(chunks, { type: "audio/webm; codecs=opus" });
+  const blob = new Blob(chunks, { type: "audio/webm" });
+  sendVoice(blob);
+};
 
-      sendVoice(blob);
-    };
+// 안정적인 chunk 수집을 위해 반드시 time slice 필요
+recorder.start(200); // 0.2초 단위로 chunk 생성됨
+setTimeout(() => recorder.stop(), 5000);
 
-    recorder.start();
-    setTimeout(() => recorder.stop(), 6000);
   };
 
 

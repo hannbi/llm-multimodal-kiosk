@@ -696,13 +696,21 @@ def process_intent(intent, slots):
     if intent == "OptionSelect":
         temp = normalize_temperature(slots.get("temperature"))
         size = normalize_size(slots.get("size"))
-        strength = slots.get("option_strength")   # ⭐ 추가됨
+        strength = slots.get("option_strength")
 
-        if not state.get("last_menu"):
-            return "어떤 음료에 옵션을 적용할까요?"
+    # ⭐ 메뉴 이름이 없으면 마지막 메뉴로 자동 설정
+        if not slots.get("menu_name"):
+            if state.get("last_menu"):
+                slots["menu_name"] = state["last_menu"]
 
-        pending = state["pending"]
+    # ⭐ pending 초기값 설정
+        pending = state.get("pending", {})
+        if "name" not in pending:
+            pending["name"] = slots["menu_name"]
+            pending["qty"] = 1
+
         name = pending["name"]
+
 
         menu = db_get_menu(name)
         valid_temps = [normalize_temperature(t) for t in menu["temperatures"]]
@@ -758,6 +766,9 @@ def process_intent(intent, slots):
     if intent == "NutritionQuery":
         name = slots.get("menu_name")
         nutrient = slots.get("nutrient")
+        
+        state["last_menu"] = name
+        state["pending"] = {"name": name, "qty": 1}
 
         menu = db_get_menu(name)
         if not menu:
