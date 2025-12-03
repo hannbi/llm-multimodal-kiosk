@@ -592,46 +592,47 @@ def process_intent(intent, slots):
     # --------------------
     if intent == "MenuQuery":
         return "안녕하세요! 주문 도와드릴게요."
-    
+
         # --------------------
     # ChangeCategory (🔥 신규 추가)
     # --------------------
+    
     if intent == "ChangeCategory":
-        category = slots.get("category")
+        category = slots.get("category", "").lower()
 
         if not category:
             return "어떤 화면을 보여드릴까요? 커피, 티/에이드, 빙수 같은 카테고리를 말씀해주세요."
 
-        # 프론트 카테고리 이름과 매핑
-        mapping = {
-            "커피": "커피",
-            "coffee": "커피",
-            "티": "티/에이드",
-            "에이드": "티/에이드",
-            "티/에이드": "티/에이드",
-            "티 에이드": "티/에이드",
-            "주스": "주스/라떼",
-            "라떼": "주스/라떼",
-            "주스라떼": "주스/라떼",
-            "쉐이크": "쉐이크/스무디",
-            "스무디": "쉐이크/스무디",
-            "빙수": "빙수/아이스크림",
-            "아이스크림": "빙수/아이스크림",
-            "빙수/아이스크림": "빙수/아이스크림",
-            "빵": "빵/케이크",
-            "케이크": "빵/케이크",
-            "스낵": "스낵",
-        }
+    # 부분 매칭 방식
+        if "커피" in category or "coffee" in category:
+            normalized = "커피"
 
-        normalized = mapping.get(category.lower())
+        elif "티" in category or "에이드" in category:
+            normalized = "티/에이드"
 
-        if not normalized:
+        elif "주스" in category or "라떼" in category:
+            normalized = "주스/라떼"
+
+        elif "쉐이크" in category or "스무디" in category:
+            normalized = "쉐이크/스무디"
+
+        elif "빙수" in category or "아이스크림" in category:
+            normalized = "빙수/아이스크림"
+
+        elif "빵" in category or "케이크" in category:
+            normalized = "빵/케이크"
+
+        elif "스낵" in category:
+            normalized = "스낵"
+
+        else:
             return f"{category} 카테고리를 찾지 못했어요."
 
-        # React로 전달할 상태 저장
+    # React로 전달할 상태 저장
         state["target_category"] = normalized
 
         return f"{normalized} 화면으로 이동할게요."
+
 
     
     
