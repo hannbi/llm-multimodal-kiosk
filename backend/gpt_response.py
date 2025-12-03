@@ -1,9 +1,45 @@
 from dotenv import load_dotenv
+import os
+import sqlite3
 from openai import OpenAI
 import json
-
+from difflib import get_close_matches
 load_dotenv()
 client = OpenAI()
+
+def db_get_all_menu_names():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, "kiosk.db")
+
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+
+    cur.execute("SELECT name FROM MenuItem")
+    rows = cur.fetchall()
+    conn.close()
+
+    # 공백 포함된 메뉴 리스트 그대로 반환
+    return [r[0] for r in rows]
+
+def normalize_menu_name(raw_name: str):
+    if not raw_name:
+        return None
+
+    raw = raw_name.replace(" ", "")  # 공백 제거 "수박주스"
+
+    menu_list = db_get_all_menu_names()
+
+    # DB 메뉴들 공백 제거 후 비교
+    dict_map = {m.replace(" ", ""): m for m in menu_list}
+
+    keys = list(dict_map.keys())
+
+    match = get_close_matches(raw, keys, n=1, cutoff=0.6)
+
+    if match:
+        return dict_map[match[0]]  # 원래 띄어쓰기 유지된 메뉴명 반환
+
+    return None
 
 def get_gpt_response(user_text: str):
     system_prompt = """
@@ -388,13 +424,21 @@ response:
 
     # ⬇⬇⬇ JSON 파싱
     try:
-        raw = response.choices[0].message.content.strip()
+      raw = response.choices[0].message.content.strip()
 
-        json_start = raw.find("{")
-        json_end = raw.rfind("}") + 1
-        clean_json = raw[json_start:json_end]
+      json_start = raw.find("{")
+      json_end = raw.rfind("}") + 1
+      clean_json = raw[json_start:json_end]
 
-        return json.loads(clean_json)
+      result = json.loads(clean_json)
+
+      if "slots" in result and "menu_name" in result["slots"]:
+        mn = result["slots"]["menu_name"]
+        corrected = normalize_menu_name(mn)
+        if corrected:
+          result["slots"]["menu_name"] = corrected
+        return result
+        
 
     except Exception as e:
         print("❌ GPT JSON 파싱 실패:", e, raw)
@@ -403,6 +447,9 @@ response:
             "slots": {},
             "response": "죄송해요, 잘 이해하지 못했어요."
         }
+    return result   # ⬅⬅⬅
+
+
 def get_gpt_response_order(user_text: str):
     system_prompt = """
 너는 주문 확인 화면(order_voice)의 음성 명령만 처리하는 AI야.

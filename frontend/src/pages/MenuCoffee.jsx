@@ -57,7 +57,7 @@ function MenuCoffee() {
   const [cartItems, setCartItems] = useState([]);
   const location = useLocation();
   const [smartRecommendData, setSmartRecommendData] = useState([]);
-
+  const [awaitingSmartConfirm, setAwaitingSmartConfirm] = useState(false);
   // 기존 state들 아래에 추가
   const [showSmartFilterModal, setShowSmartFilterModal] = useState(false);
   const [smartFilters, setSmartFilters] = useState({
@@ -277,6 +277,45 @@ function MenuCoffee() {
         return;
       }
 
+      // ⭐ 음성 기반 스마트 필터 intent
+// ⭐ 음성 기반 스마트 필터 intent (수정 후)
+if (data.intent === "SmartFilter") {
+  const { nutrient, level } = data.slots;
+
+  // 1) 전체 초기화
+  const resetFilters = {
+    calories: '전체',
+    caffeine: '전체',
+    sugar: '전체',
+    sodium: '전체',
+    protein: '전체'
+  };
+
+  // 2) 음성에서 받은 필터만 단독 적용
+  if (nutrient && level) {
+    resetFilters[nutrient] = level;
+  }
+
+  // 3) 필터 반영
+  setSmartFilters(resetFilters);
+  setFilterResultText(generateFilterText());
+
+  // 4) 안내 문장
+  setAiText(`${nutrient} ${level} 기준으로 추천 메뉴 보여드릴게요.`);
+
+  // 5) 스마트추천 화면 활성화
+  setActiveCategory("스마트추천");
+
+  // 6) 필터는 state 업데이트 후 실행해야 함
+  setTimeout(() => {
+    applySmartFilter();
+  }, 50);
+
+  return;  // ★ 안전하게 종료
+}
+
+
+
       // 🔥 스마트추천 intent
       if (data.intent === "SmartRecommend" && data.recommend) {
         setActiveCategory("스마트추천");
@@ -380,6 +419,7 @@ function MenuCoffee() {
       }
 
       // 🔥 NutritionQuery → 옵션창 열기
+      // 🔥 NutritionQuery → 옵션창 열기
       if (data.intent === "NutritionQuery" && data.slots?.menu_name) {
         const menuName = data.slots.menu_name;
 
@@ -392,9 +432,8 @@ function MenuCoffee() {
           setShowModal(true);
           setShowDetail(true);
 
-          setSelectedTemp(null);
-          setSelectedSize(null);
-          setSelectedOption(null);
+          // ✅ 수정: 옵션을 유지해야 하므로 절대 초기화하지 않음
+          // (아무 것도 넣지 않음)
 
           fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
             .then((res) => res.json())
@@ -428,11 +467,17 @@ function MenuCoffee() {
           0
         );
 
+
         navigate("/order_voice", {
           state: { cartItems, totalPrice },
         });
       }
 
+      if (awaitingSmartConfirm && data.intent === "Confirm") {
+        setAwaitingSmartConfirm(false);
+        applySmartFilter();
+        return;
+      }
     } finally {
       // ----------------------------
       // ✔ 반드시 음성 재생 — 어떤 intent라도
@@ -745,20 +790,13 @@ function MenuCoffee() {
             key="스마트추천"
             className={activeCategory === "스마트추천" ? "active" : ""}
             onClick={() => {
-              // 🔥 터치모드일 때만 모달 열기
-              if (isTouchMode) {
-                setShowSmartFilterModal(true);
-              } else {
-                // 음성모드는 기존대로
-                setActiveCategory("스마트추천");
-                setSmartRecommendData([]);
-                const scrollArea = document.querySelector(".menu-scroll-area");
-                if (scrollArea) scrollArea.scrollTop = 0;
-              }
+              // 🔥 음성/터치 모두 동일하게 필터 모달 열기
+              setShowSmartFilterModal(true);
             }}
           >
             ⭐스마트 추천
           </li>
+
         </ul>
       </aside>
 
@@ -768,11 +806,10 @@ function MenuCoffee() {
 
         <div className="menu-scroll-area">
           {/* ⭐ 상단 추천 조건 문구 (터치 모드 */}
-          {activeCategory === "스마트추천" && isTouchMode && filterResultText && (
+          {activeCategory === "스마트추천" && filterResultText && (
             <div className="smart-filter-container">
               <div className="smart-filter-top-text">
                 <p>요청하신 조건이 적용된 추천 메뉴입니다</p>
-                {/* 상세 조건 표시 */}
                 <span className="smart-condition-detail">
                   {buildFilterResultText(smartFilters)}
                 </span>
@@ -783,41 +820,11 @@ function MenuCoffee() {
               </div>
             </div>
           )}
+
           <div className="menu-grid">
             {activeCategory === "스마트추천" ? (
               <>
 
-                {/* 🔥 음성모드에서만 13개 버튼 표시 */}
-                {!isTouchMode && (
-                  <div
-                    className="smart-filter-area"
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(4, 1fr)",
-                      gap: "12px",
-                      marginBottom: "25px",
-                      maxWidth: "900px",
-                      marginLeft: "auto",
-                      marginRight: "auto",
-                      textAlign: "center",
-                    }}
-                  >
-                    {/* 기존 13개 버튼들 */}
-                    <button className="smart-btn" onClick={() => requestSmartRecommend("calories_kcal", "min")}>칼로리 낮은 순</button>
-                    <button className="smart-btn" onClick={() => requestSmartRecommend("sugar_g", "min")}>당류 낮은 순</button>
-                    <button className="smart-btn" onClick={() => requestSmartRecommend("caffeine_mg", "min")}>카페인 낮은 순</button>
-                    <button className="smart-btn" onClick={() => requestSmartRecommend("sodium_mg", "min")}>나트륨 낮은 순</button>
-                    <button className="smart-btn" onClick={() => requestSmartRecommend("protein_g", "max")}>단백질 많은 순</button>
-                    <button className="smart-btn" onClick={() => requestSmartRecommend("calories_kcal", "max")}>칼로리 높은 순</button>
-                    <button className="smart-btn" onClick={() => requestSmartRecommend("sugar_g", "max")}>당류 높은 순</button>
-                    <button className="smart-btn" onClick={() => requestSmartRecommend("caffeine_mg", "max")}>카페인 높은 순</button>
-                    <button className="smart-btn" onClick={() => requestSmartRecommend("sodium_mg", "max")}>나트륨 높은 순</button>
-                    <button className="smart-btn" onClick={() => requestSmartRecommend("protein_g", "min")}>단백질 적은 순</button>
-                    <button className="smart-btn" onClick={() => requestSmartRecommend("price", "min")}>가격 낮은 순</button>
-                    <button className="smart-btn" onClick={() => requestSmartRecommend("price", "max")}>가격 높은 순</button>
-                    <button className="smart-btn" onClick={() => requestSmartRecommend("random", "any")}>랜덤 추천</button>
-                  </div>
-                )}
 
                 {/* 🔥 추천 메뉴 결과 */}
                 {smartRecommendData.length === 0 ? (
@@ -1254,7 +1261,7 @@ function MenuCoffee() {
             <p className="option-menu-desc">Moment만의 특별한 메뉴인 {selectedMenu?.name}</p>
 
             {/* 실시간 가격 반영 */}
-            <p style={{ fontWeight: 'bold', fontSize: '2.5rem', marginTop: '15px',marginBottom:'30px' }}>
+            <p style={{ fontWeight: 'bold', fontSize: '2.5rem', marginTop: '15px', marginBottom: '30px' }}>
               ₩{selectedMenu?.price?.toLocaleString() || 0}
             </p>
 

@@ -876,7 +876,7 @@ def process_intent(intent, slots):
         reverse_sort = (compare == "max")
         sorted_items = sorted(valid_items, key=lambda x: x[nutrient], reverse=reverse_sort)
 
-        results = sorted_items[:5]
+        results = sorted_items
 
         readable = {
             "calories_kcal": "칼로리",
@@ -886,7 +886,8 @@ def process_intent(intent, slots):
             "sodium_mg": "나트륨",
         }.get(nutrient, "영양소")
 
-        msg = f"{readable}가 {'높은' if compare=='max' else '낮은'} 메뉴 TOP5입니다."
+        msg = f"{readable}가 {'높은' if compare=='max' else '낮은'} 순으로 정렬해드릴게요."
+
 
         return {
             "message": msg,

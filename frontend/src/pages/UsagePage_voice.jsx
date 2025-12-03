@@ -291,6 +291,43 @@ useEffect(() => {
           </div>
         </div>
       )}
+      {/* 🔥 터치 주문 전환 모달 */}
+{showSwitchModal && (
+  <div className="modal-overlay">
+    <div className="modal-box switch-modal">
+      <h3>터치 모드로 전환하시겠습니까?</h3>
+      <p>현재 음성 주문 모드입니다.<br />터치로 주문하시려면 전환이 필요합니다.</p>
+
+      <div className="modal-buttons switch-buttons">
+        
+        {/* 아니오 */}
+        <button
+          onClick={() => setShowSwitchModal(false)}
+          className="switch-cancel"
+        >
+          아니오
+        </button>
+
+        {/* 🔥 예 — 터치 이용방식 페이지로 이동 */}
+        <button
+          onClick={() => {
+            setShowSwitchModal(false);
+            setIsTouchMode(true);
+
+            navigate("/usage", {
+              replace: false
+            });
+          }}
+          className="switch-confirm"
+        >
+          예
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }
