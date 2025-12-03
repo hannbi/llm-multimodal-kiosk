@@ -335,7 +335,7 @@ function MenuOrder_voice() {
         <button
           className="voice-record-btn"
           onClick={startRecording}
-          style={{ background: "red", zIndex: 9999 }}
+          style={{ backgroundColor: '#e82929', zIndex: 9999, color: 'white' }}
         >
           🎤 말하기
         </button>

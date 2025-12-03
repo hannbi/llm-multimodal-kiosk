@@ -204,6 +204,11 @@ async def pay_process_voice_tts():
 
 @app.post("/complete_voice_tts")
 async def complete_voice_tts():
+    global cart
+    state["pending"] = {}
+    state["last_menu"] = None
+    cart = []  # 🔥 주문 전체 초기화
+
     text = "결제가 완료되었습니다. 잠시 후 주문이 준비됩니다."
     output = f"uploads/{uuid.uuid4()}.mp3"
     speak(text, output)
@@ -560,6 +565,9 @@ app.include_router(router, prefix="/api")
 # -----------------------------
 cart = []
 
+def to_int(v):
+    return int(v) if v is not None else 0
+
 
 def process_intent(intent, slots):
     global cart
@@ -782,11 +790,11 @@ def process_intent(intent, slots):
         if nutrient is None:
             return (
                 f"{name}의 상세정보입니다. "
-                f"칼로리는 {detail['calories_kcal']} kcal, "
-                f"당류는 {detail['sugar_g']} g, "
-                f"단백질은 {detail['protein_g']} g, "
-                f"카페인은 {detail['caffeine_mg']} mg, "
-                f"나트륨은 {detail['sodium_mg']} mg 입니다."
+                f"칼로리는 {to_int(detail['calories_kcal'])} kcal, "
+                f"당류는 {to_int(detail['sugar_g'])} g, "
+                f"단백질은 {to_int(detail['protein_g'])} g, "
+                f"카페인은 {to_int(detail['caffeine_mg'])} mg, "
+                f"나트륨은 {to_int(detail['sodium_mg'])} mg 입니다."
         )
 
         value = detail.get(nutrient)
@@ -802,7 +810,7 @@ def process_intent(intent, slots):
             "protein_g": "단백질은",
         }.get(nutrient, "해당 값은")
 
-        return f"{name}의 {readable} {value} 입니다."
+        return f"{name}의 {readable} {to_int(value)} 입니다."
     
     
     # --------------------
