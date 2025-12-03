@@ -99,9 +99,9 @@ function MenuOrder() {
             )}
           </div>
 
-          <div className="order-total-box">
-            총 결제금액 :
-            <span className="order-total-price">
+<div className="order-total-box">
+            총 결제금액
+            <span className="order-total-price" style={{ marginLeft: "50px" }}>
               ₩ {totalPrice.toLocaleString()}원
             </span>
           </div>
