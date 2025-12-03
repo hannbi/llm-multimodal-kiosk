@@ -421,6 +421,21 @@ async def process_voice_in_order_page(
     # 1) STT
     text = transcribe_from_mic(filepath)
     print("🎤 [order_voice] STT 결과 ===>", text)
+    t = text.replace(" ", "")
+    NEXT_KEYWORDS = [
+        "다음", "다음으로", "다음단계",
+        "넘어가", "넘어갈게", "넘어갈게요", "넘어갑시다",
+        "주문할게요", "주문하겠습니다", "결제할게요", "결제하러",
+        "계속진행", "바로진행", "다음으로가자", "다음가자"
+    ]
+    if any(kw in t for kw in NEXT_KEYWORDS):
+        print("🎯 [order_voice] 사용자 발화로 Next intent 강제 적용됨!")
+        return {
+            "ai_text": "다음 단계로 이동할게요.",
+            "intent": "Next",
+            "cart": enrich_cart(cart_items),
+            "audio_url": speak_and_return("다음 단계로 이동할게요.")
+        }
 
     # 2) GPT 해석
     from gpt_response import get_gpt_response_order
