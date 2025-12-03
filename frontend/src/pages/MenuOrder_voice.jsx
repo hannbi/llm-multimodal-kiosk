@@ -19,7 +19,7 @@ function MenuOrder_voice() {
   const [isBlinking, setIsBlinking] = useState(false);
   const [showStaffCallModal, setShowStaffCallModal] = useState(false);
   const [isStaffCalling, setIsStaffCalling] = useState(false);
-  const [aiText, setAiText] = useState("음성으로 주문을 수정하거나 진행할 수 있어요.");
+  const [aiText, setAiText] = useState("주문내역을 확인해주세요.");
 
 
   const scrollRef = useRef(null);
