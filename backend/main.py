@@ -467,7 +467,7 @@ async def process_voice_in_order_page(
             msg = "장바구니에 담긴 메뉴가 없어요."
         else:
             items_text = ", ".join([
-                f"{item['name']} {item['qty']}잔"
+                f"{item['name']} {item['qty']}개"
                 for item in cart_items   # ← 여기가 진짜 cart!!!!!
             ])
             msg = f"현재 주문하신 메뉴는 {items_text} 입니다."
@@ -482,12 +482,12 @@ async def process_voice_in_order_page(
     # 3) 음료 추가
     if intent == "AddItem":
         return {
-            "ai_text": f"{slots.get('menu_name')} 한 잔 더 추가할게요.",
+            "ai_text": f"{slots.get('menu_name')} 한 개 더 추가할게요.",
             "intent": "AddItem",
             "slots": slots,
             "cart": enrich_cart(cart_items),   # 현재 장바구니 함께 리턴
             "audio_url": speak_and_return(
-                f"{slots.get('menu_name')} 한 잔 더 추가했습니다."
+                f"{slots.get('menu_name')} 한 개 더 추가했습니다."
             )
         }
 
@@ -1031,7 +1031,7 @@ def process_intent(intent, slots):
 
         text = "현재 담긴 메뉴는 "
         for item in cart:
-            text += f"{item['name']} {item['qty']}잔, "
+            text += f"{item['name']} {item['qty']}개, "
         return text
 
 
