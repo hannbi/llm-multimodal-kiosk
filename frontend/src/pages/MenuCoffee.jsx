@@ -11,29 +11,29 @@ function MenuCoffee() {
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-const recorder = new MediaRecorder(stream);
+    const recorder = new MediaRecorder(stream);
 
-const chunks = [];
+    const chunks = [];
 
-recorder.ondataavailable = (e) => {
-  if (e.data && e.data.size > 0) {
-    chunks.push(e.data);
-  }
-};
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        chunks.push(e.data);
+      }
+    };
 
-recorder.onstop = () => {
-  if (chunks.length === 0) {
-    console.error("❌ 녹음된 데이터가 없습니다 (chunks empty)");
-    return;
-  }
+    recorder.onstop = () => {
+      if (chunks.length === 0) {
+        console.error("❌ 녹음된 데이터가 없습니다 (chunks empty)");
+        return;
+      }
 
-  const blob = new Blob(chunks, { type: "audio/webm" });
-  sendVoice(blob);
-};
+      const blob = new Blob(chunks, { type: "audio/webm" });
+      sendVoice(blob);
+    };
 
-// 안정적인 chunk 수집을 위해 반드시 time slice 필요
-recorder.start(200); // 0.2초 단위로 chunk 생성됨
-setTimeout(() => recorder.stop(), 5000);
+    // 안정적인 chunk 수집을 위해 반드시 time slice 필요
+    recorder.start(200); // 0.2초 단위로 chunk 생성됨
+    setTimeout(() => recorder.stop(), 5000);
 
   };
 
@@ -89,61 +89,71 @@ setTimeout(() => recorder.stop(), 5000);
     }, 50);
   };
 
-const buildFilterResultText = (filters) => {
-  const labels = [];
+  const buildFilterResultText = (filters) => {
+    const labels = [];
 
-  // 카페인
-  if (filters.caffeine === "없음")
-    labels.push("카페인 없음 ( 0mg )");
-  else if (filters.caffeine === "적음")
-    labels.push("카페인 적음 ( <100mg )");
-  else if (filters.caffeine === "많음")
-    labels.push("카페인 많음 ( ≥150mg )");
+    // 카페인
+    if (filters.caffeine === "없음")
+      labels.push("카페인 없음 ( 0mg )");
+    else if (filters.caffeine === "적음")
+      labels.push("카페인 적음 ( <100mg )");
+    else if (filters.caffeine === "많음")
+      labels.push("카페인 많음 ( ≥150mg )");
 
-  // 당류
-  if (filters.sugar === "없음")
-    labels.push("당류 없음 ( 0g )");
-  else if (filters.sugar === "적음")
-    labels.push("당류 적음 ( <5g )");
-  else if (filters.sugar === "많음")
-    labels.push("당류 많음 ( ≥50g )");
+    // 당류
+    if (filters.sugar === "없음")
+      labels.push("당류 없음 ( 0g )");
+    else if (filters.sugar === "적음")
+      labels.push("당류 적음 ( <5g )");
+    else if (filters.sugar === "많음")
+      labels.push("당류 많음 ( ≥50g )");
 
-  // 칼로리
-  if (filters.calories === "낮음")
-    labels.push("칼로리 낮음 ( <130kcal )");
-  else if (filters.calories === "높음")
-    labels.push("칼로리 높음 ( ≥220kcal )");
+    // 칼로리
+    if (filters.calories === "없음")
+      labels.push("칼로리 없음 ( 0kcal )");
+    else if (filters.calories === "적음")
+      labels.push("칼로리 적음 ( <130kcal )");
+    else if (filters.calories === "많음")
+      labels.push("칼로리 많음 ( ≥220kcal )");
 
-  // 단백질  ← 🔥 수정됨
-  if (filters.protein === "없음")
-    labels.push("단백질 없음 ( 0g )");
-  else if (filters.protein === "적음")
-    labels.push("단백질 적음 ( <10g )");
-  else if (filters.protein === "많음")
-    labels.push("단백질 많음 ( ≥10g )");
 
-  // 나트륨
-  if (filters.sodium === "없음")
-    labels.push("나트륨 없음 ( 0mg )");
-  else if (filters.sodium === "적음")
-    labels.push("나트륨 적음 ( <100mg )");
-  else if (filters.sodium === "많음")
-    labels.push("나트륨 많음 ( ≥200mg )");
+    // 단백질  ← 🔥 수정됨
+    if (filters.protein === "없음")
+      labels.push("단백질 없음 ( 0g )");
+    else if (filters.protein === "적음")
+      labels.push("단백질 적음 ( <10g )");
+    else if (filters.protein === "많음")
+      labels.push("단백질 많음 ( ≥10g )");
 
-  return labels.join(" · ");
-};
+    // 나트륨
+    if (filters.sodium === "없음")
+      labels.push("나트륨 없음 ( 0mg )");
+    else if (filters.sodium === "적음")
+      labels.push("나트륨 적음 ( <100mg )");
+    else if (filters.sodium === "많음")
+      labels.push("나트륨 많음 ( ≥200mg )");
+
+    const text = labels.join(" · ");
+    return text || "전체 기준입니다";
+  };
 
   // 🔥 새로운 필터링 함수
   const applySmartFilter = async () => {
     const params = new URLSearchParams();
 
     // 칼로리
-    if (smartFilters.calories === '낮음') {
+    if (smartFilters.calories === '없음') {
       params.append('calories_min', 0);
+      params.append('calories_max', 0);
+    }
+    else if (smartFilters.calories === '적음') {
+      params.append('calories_min', 1);
       params.append('calories_max', 130);
-    } else if (smartFilters.calories === '높음') {
+    }
+    else if (smartFilters.calories === '많음') {
       params.append('calories_min', 220);
     }
+
 
     // 카페인
     if (smartFilters.caffeine === '없음') {
@@ -194,11 +204,11 @@ const buildFilterResultText = (filters) => {
     const res = await fetch(`http://localhost:5000/api/smart_filter?${params.toString()}`);
     const data = await res.json();
 
-setSmartRecommendData(data.recommend || []);
-setFilterResultText(buildFilterResultText(smartFilters));
-setTimeout(() => {
-  setActiveCategory("스마트추천");
-}, 0);
+    setSmartRecommendData(data.recommend || []);
+    setFilterResultText(buildFilterResultText(smartFilters));
+    setTimeout(() => {
+      setActiveCategory("스마트추천");
+    }, 0);
 
     setShowSmartFilterModal(false);
 
@@ -289,92 +299,118 @@ setTimeout(() => {
       }
 
       // ⭐ 음성 기반 스마트 필터 intent
-// ⭐ 음성 기반 스마트 필터 intent (수정 후)
-if (data.intent === "SmartFilter") {
-  const { nutrient, level } = data.slots;
+      // ⭐ 음성 기반 스마트 필터 intent (수정 후)
+      if (data.intent === "SmartFilter") {
+        const { nutrient, level } = data.slots;
 
-  // 1) 전체 초기화
-  const resetFilters = {
-    calories: '전체',
-    caffeine: '전체',
-    sugar: '전체',
-    sodium: '전체',
-    protein: '전체'
-  };
+        // 1) 전체 초기화
+        const resetFilters = {
+          calories: '전체',
+          caffeine: '전체',
+          sugar: '전체',
+          sodium: '전체',
+          protein: '전체'
+        };
+        const map = {
+          calories_kcal: "calories",
+          caffeine_mg: "caffeine",
+          sugar_g: "sugar",
+          sodium_mg: "sodium",
+          protein_g: "protein"
+        };
+        const key = map[nutrient];
 
-  // 2) 음성에서 받은 필터만 단독 적용
-  if (nutrient && level) {
-    resetFilters[nutrient] = level;
-  }
+        const convertLevel = {
+          max: "높음",
+          high: "높음",
+          많음: "높음",
 
-  // 3) 필터 반영
-setSmartFilters(resetFilters);
+          min: "낮음",
+          low: "낮음",
+          적음: "낮음"
+        };
 
-const text = buildFilterResultText(resetFilters);
-setFilterResultText(text);
+        const finalLevel = convertLevel[level] || level;
 
-setActiveCategory("스마트추천");
+        if (key && finalLevel) {
+          resetFilters[key] = finalLevel;   // ✅ 프론트가 원하는 값으로 변환 후 저장
+        }
 
-// ⭐ 서버에 직접 요청해서 추천 받아오기 (applySmartFilter 쓰지 않음)
-fetch(`http://localhost:5000/api/smart_filter?${new URLSearchParams(
-  buildParamsFromFilters(resetFilters)
-).toString()}`)
-  .then(res => res.json())
-  .then(data => {
-    setSmartRecommendData(data.recommend || []);
-  });
+        // 3) 필터 반영
+        setSmartFilters(resetFilters);
 
-return;
+        const text = buildFilterResultText(resetFilters);
+        setFilterResultText(text);
 
-}
+        setActiveCategory("스마트추천");
+
+        // ⭐ 서버에 직접 요청해서 추천 받아오기 (applySmartFilter 쓰지 않음)
+        fetch(`http://localhost:5000/api/smart_filter?${new URLSearchParams(
+          buildParamsFromFilters(resetFilters)
+        ).toString()}`)
+          .then(res => res.json())
+          .then(data => {
+            setSmartRecommendData(data.recommend || []);
+          });
+
+        return;
+
+      }
 
 
 
       // 🔥 스마트추천 intent
-// 🔥 스마트추천 intent (복수 조건 지원 버전)
-if (data.intent === "SmartRecommend" && data.recommend) {
+      // 🔥 스마트추천 intent (복수 조건 지원 버전)
+      if (data.intent === "SmartRecommend") {
 
-  setActiveCategory("스마트추천");
-  setSmartRecommendData(data.recommend);
-  setAiText(data.ai_text);
+        setActiveCategory("스마트추천");
+        setSmartRecommendData(data.recommend);
+        setAiText(data.ai_text);
 
-  // 🔥 초기화
-  const newFilters = {
-    calories: '전체',
-    caffeine: '전체',
-    sugar: '전체',
-    sodium: '전체',
-    protein: '전체'
-  };
+        // 🔥 초기화
+        const newFilters = {
+          calories: '전체',
+          caffeine: '전체',
+          sugar: '전체',
+          sodium: '전체',
+          protein: '전체'
+        };
 
-  // 🔥 filters 배열 처리
-  if (data.slots?.filters && Array.isArray(data.slots.filters)) {
+        // 🔥 filters 배열 처리
+        const rawFilters = data.slots?.filters || data.filters;  // ⭐ 둘 다 처리
 
-    const nutrientMap = {
-      calories_kcal: "calories",
-      caffeine_mg: "caffeine",
-      sugar_g: "sugar",
-      sodium_mg: "sodium",
-      protein_g: "protein"
-    };
+        if (rawFilters && Array.isArray(rawFilters)) {
+          const nutrientMap = {
+            calories_kcal: "calories",
+            caffeine_mg: "caffeine",
+            sugar_g: "sugar",
+            sodium_mg: "sodium",
+            protein_g: "protein"
+          };
 
-    const levelMap = {
-      max: "많음",
-      min: "적음"
-    };
+          const levelMap = { max: "많음", min: "적음" };
 
-    data.slots.filters.forEach(cond => {
-      const k = nutrientMap[cond.nutrient];
-      const l = levelMap[cond.compare];
-      if (k && l) newFilters[k] = l;
-    });
+          const newFilters = {
+            calories: "전체",
+            caffeine: "전체",
+            sugar: "전체",
+            sodium: "전체",
+            protein: "전체"
+          };
 
-    setSmartFilters(newFilters);
-    setFilterResultText(buildFilterResultText(newFilters));
-  }
+          rawFilters.forEach(cond => {
+            const k = nutrientMap[cond.nutrient];
+            const l = levelMap[cond.compare];
+            if (k && l) newFilters[k] = l;
+          });
 
-  return;
-}
+          setSmartFilters(newFilters);
+          setFilterResultText(buildFilterResultText(newFilters));
+        }
+
+
+        return;
+      }
 
 
       // 🔥 BuildOrder → 옵션 모달 자동 오픈
@@ -467,61 +503,61 @@ if (data.intent === "SmartRecommend" && data.recommend) {
 
       // 🔥 NutritionQuery → 옵션창 열기
       // 🔥 NutritionQuery → 옵션창 열기
-// 🔥 NutritionQuery → 옵션창 열기
-if (data.intent === "NutritionQuery" && data.slots?.menu_name) {
-  const menuName = data.slots.menu_name;
+      // 🔥 NutritionQuery → 옵션창 열기
+      if (data.intent === "NutritionQuery" && data.slots?.menu_name) {
+        const menuName = data.slots.menu_name;
 
-  const foundMenu = Object.values(menuData)
-    .flat()
-    .find((m) => m.name === menuName);
+        const foundMenu = Object.values(menuData)
+          .flat()
+          .find((m) => m.name === menuName);
 
-  if (foundMenu) {
-    setSelectedMenu(foundMenu);
-    setShowModal(true);
-    setShowDetail(true);
+        if (foundMenu) {
+          setSelectedMenu(foundMenu);
+          setShowModal(true);
+          setShowDetail(true);
 
-    // 옵션 초기화 금지 (음성 선택값 유지)
-    fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
-      .then((res) => res.json())
-      .then((opt) => {
-        setAvailableSizes(opt.sizes || []);
-        setAvailableTemps(opt.temperatures || []);
-
-        let autoTemp = selectedTemp;
-        let autoSize = selectedSize;
-
-        // 자동 온도 선택
-        if (opt.temperatures?.length === 1) {
-          autoTemp = opt.temperatures[0];
-          setSelectedTemp(autoTemp);
-        }
-
-        // 자동 사이즈 선택
-        if (opt.sizes?.length === 1) {
-          autoSize = opt.sizes[0];
-          setSelectedSize(autoSize);
-        }
-
-        // ⭐ 자동선택 값 존재할 때만 detail API 호출
-        if (autoTemp && autoSize) {
-          fetch(`http://localhost:5000/api/menu/${foundMenu.name}/detail?size=${autoSize}&temperature=${autoTemp}`)
+          // 옵션 초기화 금지 (음성 선택값 유지)
+          fetch(`http://localhost:5000/api/menu/${foundMenu.name}/options`)
             .then((res) => res.json())
-            .then((data) => {
-              setSelectedMenu((prev) => ({
-                ...prev,
-                price: data.price,
-                volume_ml: data.volume_ml,
-                calories_kcal: data.calories_kcal,
-                sugar_g: data.sugar_g,
-                protein_g: data.protein_g,
-                caffeine_mg: data.caffeine_mg,
-                sodium_mg: data.sodium_mg,
-              }));
+            .then((opt) => {
+              setAvailableSizes(opt.sizes || []);
+              setAvailableTemps(opt.temperatures || []);
+
+              let autoTemp = selectedTemp;
+              let autoSize = selectedSize;
+
+              // 자동 온도 선택
+              if (opt.temperatures?.length === 1) {
+                autoTemp = opt.temperatures[0];
+                setSelectedTemp(autoTemp);
+              }
+
+              // 자동 사이즈 선택
+              if (opt.sizes?.length === 1) {
+                autoSize = opt.sizes[0];
+                setSelectedSize(autoSize);
+              }
+
+              // ⭐ 자동선택 값 존재할 때만 detail API 호출
+              if (autoTemp && autoSize) {
+                fetch(`http://localhost:5000/api/menu/${foundMenu.name}/detail?size=${autoSize}&temperature=${autoTemp}`)
+                  .then((res) => res.json())
+                  .then((data) => {
+                    setSelectedMenu((prev) => ({
+                      ...prev,
+                      price: data.price,
+                      volume_ml: data.volume_ml,
+                      calories_kcal: data.calories_kcal,
+                      sugar_g: data.sugar_g,
+                      protein_g: data.protein_g,
+                      caffeine_mg: data.caffeine_mg,
+                      sodium_mg: data.sodium_mg,
+                    }));
+                  });
+              }
             });
         }
-      });
-  }
-}
+      }
 
       // 🔥 AddToCart
       if (data.intent === "AddToCart") {
@@ -1176,26 +1212,38 @@ if (data.intent === "NutritionQuery" && data.slots?.menu_name) {
             <div className="filter-section">
               <label>칼로리 (Calories)</label>
               <div className="filter-buttons">
+
                 <button
-                  className={smartFilters.calories === '낮음' ? 'active' : ''}
-                  onClick={() => setSmartFilters({ ...smartFilters, calories: '낮음' })}
+                  className={smartFilters.calories === '없음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, calories: '없음' })}
                 >
-                  낮음
+                  없음
                 </button>
+
+                <button
+                  className={smartFilters.calories === '적음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, calories: '적음' })}
+                >
+                  적음
+                </button>
+
                 <button
                   className={smartFilters.calories === '전체' ? 'active' : ''}
                   onClick={() => setSmartFilters({ ...smartFilters, calories: '전체' })}
                 >
                   전체
                 </button>
+
                 <button
-                  className={smartFilters.calories === '높음' ? 'active' : ''}
-                  onClick={() => setSmartFilters({ ...smartFilters, calories: '높음' })}
+                  className={smartFilters.calories === '많음' ? 'active' : ''}
+                  onClick={() => setSmartFilters({ ...smartFilters, calories: '많음' })}
                 >
-                  높음
+                  많음
                 </button>
+
               </div>
             </div>
+
 
             {/* 당류 */}
             <div className="filter-section">

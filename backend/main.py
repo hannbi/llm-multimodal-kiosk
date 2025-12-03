@@ -987,7 +987,8 @@ def process_intent(intent, slots):
 
         return {
             "message": msg,
-            "recommend": results
+            "recommend": results,
+            "filters": filters
         }
 
  # --------------------
