@@ -296,8 +296,7 @@ function MenuOrder_voice() {
                   <div className="menu-info">
                     <div className="order-item-name-voice">{item.name}</div>
                     <div className="order-item-option-voice">
-                      {item.temp} / {item.size}
-                      {item.option && ` / ${item.option}`}
+                      {[item.temp, item.size, item.option].filter(Boolean).join(" / ")}
                     </div>
                   </div>
                   <div className="menu-qty">
@@ -314,8 +313,8 @@ function MenuOrder_voice() {
           </div>
 
           <div className="order-total-box-voice">
-            총 결제금액 :
-            <span className="order-total-price-voice">
+            총 결제금액
+            <span className="order-total-price-voice" style={{ marginLeft: "50px" }}>
               ₩ {totalPrice.toLocaleString()}원
             </span>
           </div>
@@ -382,44 +381,44 @@ function MenuOrder_voice() {
         </div>
       )}
       {/* 🔥 터치 주문 전환 모달 추가됨 */}
-{showSwitchModal && (
-  <div className="modal-overlay">
-    <div className="modal-box switch-modal">
-      <h3>터치 모드로 전환하시겠습니까?</h3>
-      <p>현재 음성주문 모드입니다.<br />터치로 주문하시려면 전환이 필요합니다.</p>
+      {showSwitchModal && (
+        <div className="modal-overlay">
+          <div className="modal-box switch-modal">
+            <h3>터치 모드로 전환하시겠습니까?</h3>
+            <p>현재 음성주문 모드입니다.<br />터치로 주문하시려면 전환이 필요합니다.</p>
 
-      <div className="modal-buttons switch-buttons">
+            <div className="modal-buttons switch-buttons">
 
-        {/* 아니오 */}
-        <button
-          onClick={() => setShowSwitchModal(false)}
-          className="cancel-btn switch-cancel"
-        >
-          아니오
-        </button>
+              {/* 아니오 */}
+              <button
+                onClick={() => setShowSwitchModal(false)}
+                className="cancel-btn switch-cancel"
+              >
+                아니오
+              </button>
 
-        {/* 🔥 예 — 터치 주문으로 이동 + cart 유지 */}
-        <button
-          onClick={() => {
-            setShowSwitchModal(false);
-            setIsTouchMode(true);
+              {/* 🔥 예 — 터치 주문으로 이동 + cart 유지 */}
+              <button
+                onClick={() => {
+                  setShowSwitchModal(false);
+                  setIsTouchMode(true);
 
-            navigate("/order", {
-              state: {
-                cartItems,
-                totalPrice
-              }
-            });
-          }}
-          className="add-btn switch-confirm"
-        >
-          예
-        </button>
+                  navigate("/order", {
+                    state: {
+                      cartItems,
+                      totalPrice
+                    }
+                  });
+                }}
+                className="add-btn switch-confirm"
+              >
+                예
+              </button>
 
-      </div>
-    </div>
-  </div>
-)}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
