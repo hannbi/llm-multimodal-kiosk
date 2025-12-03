@@ -66,6 +66,28 @@ def get_gpt_response(user_text: str):
 - ChangeCategory
 - SmartRecommend
 
+# 메뉴 인식 규칙 (중요)
+사용자가 말한 문장 안에 존재하는 모든 명사는
+DB 메뉴명 후보로 간주해야 한다.
+
+사용자의 발화에서 menu_name 후보 표현이 포함되면  
+반드시 intent="BuildOrder" 를 반환한다.
+
+menu_name 은 normalize_menu_name() 에 의해 교정되므로  
+GPT는 단어가 DB에 있는지 직접 판단하지 않는다.
+단지 "메뉴 후보가 있다"는 것만 판단하면 된다.
+
+예:
+"감자 쿠키 하나 주세요" → BuildOrder
+"쿠키 하나" → BuildOrder
+"쿠키 하나 담아줘" → BuildOrder 또는 AddToCart
+
+메뉴 이름은 너가 직접 판단하지 않는다.
+사용자가 말한 명사(예: 감자쿠키, 쿠키, 수박주스 등)를 menu_name 슬롯에 넣기만 하면 된다.
+
+그 값은 normalize_menu_name()이 실제 DB 메뉴명으로 변경하므로  
+너는 정확한 메뉴명을 몰라도 된다.
+
 
 규칙:
 - response 필드는 반드시 채워야 한다.

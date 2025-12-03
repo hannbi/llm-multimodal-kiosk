@@ -671,6 +671,19 @@ def process_intent(intent, slots):
             pending["size"] = size
         if strength:
             pending["strength"] = strength   # ⭐ 추가됨
+            
+        # ⭐⭐⭐ 온도/사이즈/옵션이 전혀 필요 없는 메뉴는 바로 완료 처리
+        if len(valid_temps) == 0 and len(valid_sizes) == 0:
+    # 예: 감자쿠키 같은 빵류
+            state["pending"] = {
+                "name": name,
+                "qty": qty,
+                "temperature": None,
+                "size": None,
+                "strength": None
+            }
+            return "선택이 완료되었어요. 담을까요?"
+
 
         state["last_menu"] = name
         state["pending"] = pending
@@ -692,17 +705,30 @@ def process_intent(intent, slots):
         category = menu.get("category", "")
         is_coffee = category == "커피"
 
-# 커피 메뉴일 경우만 strength를 물어본다
+# 온도 1개일 때 → None이면 옵션 없는 메뉴 처리
         if len(valid_temps) == 1 and not has_temp:
-            pending["temperature"] = valid_temps[0]
+            if valid_temps[0] is None:
+                pending["temperature"] = None
+            else:
+                pending["temperature"] = valid_temps[0]
+                state["pending"] = pending
+                return f"{name}는 온도가 {valid_temps[0]} 하나뿐이라 자동으로 선택했어요."
             state["pending"] = pending
-            return f"{name}는 온도가 {valid_temps[0]} 하나뿐이라 자동으로 선택했어요."
 
-# 사이즈 1개 자동 선택 멘트
+# 사이즈 1개일 때 → None이면 옵션 없는 메뉴 처리
         if len(valid_sizes) == 1 and not has_size:
-            pending["size"] = valid_sizes[0]
+            if valid_sizes[0] is None:
+                pending["size"] = None
+            else:
+                pending["size"] = valid_sizes[0]
+                state["pending"] = pending
+                return f"{name}는 사이즈가 {valid_sizes[0]} 하나뿐이라 자동으로 선택했어요."
             state["pending"] = pending
-            return f"{name}는 사이즈가 {valid_sizes[0]} 하나뿐이라 자동으로 선택했어요."
+
+# 온도/사이즈 모두 None → 옵션 없는 메뉴 → 바로 선택 완료
+        if pending.get("temperature") is None and pending.get("size") is None:
+            return f"{name} 담을까요?"
+
 
 # 커피는 strength 필요
         if is_coffee:
