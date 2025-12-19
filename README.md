@@ -31,11 +31,11 @@
 | 역할 | GitHub | 
 |------|----------------|
 | PM / Backend / UX·UI | [hannbi](https://github.com/hannbi) |
-| Frontend / Interaction Developer | [qksdmsqls1](https://github.com/qksdmsqls1) | 
+| Frontend / Interaction Developer | [eunbin7](https://github.com/eunbin7) | 
 
 ### 👥 Contributions | hannbi
 
-### 👥 Contributions | qksdmsqls1
+### 👥 Contributions | eunbin7
 - Implemented kiosk UI and interaction flow with React based on Figma designs
   (Figma 기반 키오스크 화면 구성 및 사용자 플로우 구현)
 - Built touch-optimized UI, established screen structure, and adjusted design
