@@ -26,7 +26,39 @@
 - 사용자 발화 → LLM 의도 분석
 - 주문 로직 처리 → 응답 생성
 - 음성 출력(TTS) 및 화면 UI 동시 제공
-  
+
+## 🛠 Installation | 설치 및 실행 방법
+```bash
+1️⃣ 프로젝트 클론
+git clone https://github.com/your-repo/LLM-Multimodal-Kiosk.git
+cd LLM-Multimodal-Kiosk
+```
+```bash
+2️⃣ Backend 설정 및 실행
+cd backend
+pip install -r requirements.txt
+python main.py
+Backend 환경 변수 설정 (backend/.env)
+OPENAI_API_KEY=your_openai_api_key
+STT_API_KEY=your_stt_api_key
+TTS_API_KEY=your_tts_api_key
+```
+```bash
+3️⃣ Frontend 설정 및 실행 (새 터미널)
+cd frontend
+npm install
+npm start
+Frontend 환경 변수 설정 (frontend/.env)
+REACT_APP_API_URL=http://localhost:5000
+```
+```bash
+4️⃣ 실행 환경
+Frontend: http://localhost:3000
+Backend API: http://localhost:5000
+음성 입력 마이크 사용 가능 환경 필요
+```
+
+
 ## 👥 Collaborators | 개발팀
 | 역할 | GitHub | 
 |------|----------------|
