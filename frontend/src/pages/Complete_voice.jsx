@@ -116,7 +116,7 @@ function Complete_voice() {
         <div className="order-list-container-voice">
           <h2 className="complete-title">결제가 완료되었습니다</h2>
           <h3 className="complete-subtitle">대기번호</h3>
-          <p className="complete-time">예상 소요시간: 5분</p>
+          {/* <p className="complete-time">예상 소요시간: 5분</p> */}
 
           <div className="complete-number">27</div>
 
