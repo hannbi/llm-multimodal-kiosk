@@ -21,7 +21,7 @@
 - 사용자 발화 → LLM 의도 분석
 - 주문 로직 처리 → 응답 생성
 - 음성 출력(TTS) 및 화면 UI 동시 제공
-<img width="1070" height="520" alt="section_2 1" src="https://github.com/user-attachments/assets/a421b179-b8cb-4a14-8f16-2d4ad1d85683" />
+<img width="749" height="364" alt="section_2 1" src="https://github.com/user-attachments/assets/a421b179-b8cb-4a14-8f16-2d4ad1d85683" />
 
 ## 📌 Expected Outcomes | 기대효과
 
