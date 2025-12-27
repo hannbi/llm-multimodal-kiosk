@@ -59,16 +59,8 @@ LLM 기반 대화형 주문 처리와 음성(STT/TTS)·터치를 결합한 멀�
 영양정보 기반 스마트 추천 기능은 개인의 취향과 건강 조건을 고려한 메뉴 선택을 가능하게 하여 단순 주문 기계를 넘어 개인화된 서비스 플랫폼으로서의 키오스크 확장 가능성을 보여준다. 더 나아가 본 시스템은 카페 환경뿐 아니라 패스트푸드점, 무인 매장, 공공 안내 시스템 등 다양한 무인 서비스 환경으로 확장 적용할 수 있는 지능형 키오스크 모델의 기반을 제시한다.
 
 ## 👥 Collaborators | 개발팀
-| 역할 | GitHub | 
+| Name | GitHub | 
 |------|----------------|
-| PM / Backend / UX·UI | [hannbi](https://github.com/hannbi) |
-| Frontend / Interaction Developer | [eunbin7](https://github.com/eunbin7) | 
-
-### 👥 Contributions | eunbin7
-- Implemented kiosk UI and interaction flow with React based on Figma designs
-  (Figma 기반 키오스크 화면 구성 및 사용자 플로우 구현)
-- Built touch-optimized UI, established screen structure, and adjusted design
-  (키오스크용 화면 뼈대 구성 및 디자인 수정·보완)
-- Integrated frontend with backend systems for order processing and voice recognition results, enabling    data storage and flow
-  (주문 및 음성 AI 결과를 프론트엔드에서 연동하고 데이터 흐름/저장 처리)
+| 김한비 | [hannbi](https://github.com/hannbi) |
+ 황은빈빈   은빈 | [eunbin7](https://github.com/eun i 
 
