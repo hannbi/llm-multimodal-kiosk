@@ -2,7 +2,7 @@
 
 음성·터치 기반의 LLM 멀티모달 키오스크 
 – 사용자 질의에 따라 지능적으로 주문을 처리하는 카페 환경용 시스템
-![Uploading section_2.0.png…]()
+<img width="1326" height="1041" alt="section_2 0" src="https://github.com/user-attachments/assets/c10f1a14-29be-40de-8da3-e15f144c6d19" />
 
 ## 💡 Description | 설명
 - 음성 인식(STT)과 터치 입력을 동시에 지원하는 카페 주문 키오스크
