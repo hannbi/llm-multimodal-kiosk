@@ -1,4 +1,4 @@
-#  🤖 LLM-Multimodal-Kiosk
+<img width="1070" height="520" alt="section_2 1" src="https://github.com/user-attachments/assets/0cf1177e-5765-45ac-aece-2352df080320" />#  🤖 LLM-Multimodal-Kiosk
 
 음성·터치 기반의 LLM 멀티모달 키오스크 
 – 사용자 질의에 따라 지능적으로 주문을 처리하는 카페 환경용 시스템
@@ -16,60 +16,19 @@
 - 주문 내역 수정 및 단계별 결제 흐름 안내
 
 ## 💻 Stack | 기술 스택
-- Frontend: React, JavaScript, CSS
-- Backend: Python
-- AI / LLM: OpenAI API
-- Speech: Speech-to-Text, Text-to-Speech
   
 ## ⚙️ Structure | 구조
 - 음성 입력 → STT 처리
 - 사용자 발화 → LLM 의도 분석
 - 주문 로직 처리 → 응답 생성
 - 음성 출력(TTS) 및 화면 UI 동시 제공
-
-## 🛠 Installation | 설치 및 실행 방법
-
-1️⃣ 프로젝트 클론
-```bash
-git clone https://github.com/your-repo/LLM-Multimodal-Kiosk.git
-cd LLM-Multimodal-Kiosk
-```
-
-2️⃣ Backend 설정 및 실행
-```bash
-cd backend
-pip install -r requirements.txt
-python main.py
-Backend 환경 변수 설정 (backend/.env)
-OPENAI_API_KEY=your_openai_api_key
-STT_API_KEY=your_stt_api_key
-TTS_API_KEY=your_tts_api_key
-```
-
-3️⃣ Frontend 설정 및 실행 (새 터미널)
-```bash
-cd frontend
-npm install
-npm start
-Frontend 환경 변수 설정 (frontend/.env)
-REACT_APP_API_URL=http://localhost:5000
-```
-
-4️⃣ 실행 환경
-```bash
-Frontend: http://localhost:3000
-Backend API: http://localhost:5000
-음성 입력 마이크 사용 가능 환경 필요
-```
-
+<img width="1070" height="520" alt="section_2 1" src="https://github.com/user-attachments/assets/a421b179-b8cb-4a14-8f16-2d4ad1d85683" />
 
 ## 👥 Collaborators | 개발팀
 | 역할 | GitHub | 
 |------|----------------|
 | PM / Backend / UX·UI | [hannbi](https://github.com/hannbi) |
 | Frontend / Interaction Developer | [eunbin7](https://github.com/eunbin7) | 
-
-### 👥 Contributions | hannbi
 
 ### 👥 Contributions | eunbin7
 - Implemented kiosk UI and interaction flow with React based on Figma designs
