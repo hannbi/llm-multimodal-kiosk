@@ -62,5 +62,5 @@ LLM 기반 대화형 주문 처리와 음성(STT/TTS)·터치를 결합한 멀�
 | Name | GitHub | 
 |------|----------------|
 | 김한비 | [hannbi](https://github.com/hannbi) |
- 황은빈빈   은빈 | [eunbin7](https://github.com/eun i 
+| 황은빈 | [eunbin7](https://github.com/eunbin7) |
 
